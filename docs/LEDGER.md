@@ -39,16 +39,25 @@ per-response `usage` objects, not from an estimate.
   response line. Time spent executing tools or waiting on a human falls outside
   every such interval and is excluded. Treat these as good estimates, not meter
   readings.
+- **`models (% of cost)`** names every model that served the session and each
+  one's share of the session's cost, most expensive first. The model is read
+  from the `model` field the API returns on each response, and each response is
+  priced at its own model's rates — so a mixed-model session is costed
+  correctly, not at a single assumed rate. Share is of **cost, not tokens**: a
+  cheap auxiliary model can dominate a session's raw token count while
+  accounting for a few percent of its value, and a token share would make that
+  look like the reverse. `python3 scripts/ledger.py --transcript <path>
+  --breakdown` prints the full per-model table behind this cell.
 - **`interventions`, `tests_added`, `qa_result`** are `-` unless filled in by
   hand. Nothing in the transcript reports them reliably, so the script does not
   invent them.
 
 ## Ledger
 
-| date | session_id | task_id | criteria_ids | wall_clock_min | api_time_min | leverage_ratio | input_tokens | output_tokens | cache_write_tokens | cache_read_tokens | api_cost_usd | interventions (accepted/edited/rejected) | tests_added | qa_result | notes |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2026-08-31 | unrecorded (pre-hook) | SETUP-01 | - | 10.0 | 4.0 | 0.40 | 208 | 587 | 885,800 | 9,700,000 | 3.02 | - | - | - | backfilled from /cost; repo init, branch protection. Cost is as /cost reported it; it does not reconcile with Opus 5 list pricing for these counts (see `--selfcheck`). |
-| 2026-08-31 | 89cb008a-f78d-5c8f-bef3-e68cab039af7 | LEDGER-01 | - | 5.1 | 4.6 | 0.90 | 32 | 23,176 | 190,048 | 1,340,488 | 3.15 | - | - | - | ledger system build; row written by the hook itself |
+| date | session_id | task_id | criteria_ids | wall_clock_min | api_time_min | leverage_ratio | input_tokens | output_tokens | cache_write_tokens | cache_read_tokens | api_cost_usd | models (% of cost) | interventions (accepted/edited/rejected) | tests_added | qa_result | notes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-08-31 | unrecorded (pre-hook) | SETUP-01 | - | 10.0 | 4.0 | 0.40 | 208 | 587 | 885,800 | 9,700,000 | 3.02 | unverified (no transcript) | - | - | - | backfilled from /cost; repo init, branch protection. Cost is as /cost reported it; it does not reconcile with Opus 5 list pricing for these counts (see `--selfcheck`). |
+| 2026-08-31 | 89cb008a-f78d-5c8f-bef3-e68cab039af7 | LEDGER-01 | - | 12.2 | 8.2 | 0.67 | 52 | 40,045 | 205,310 | 2,704,523 | 4.41 | claude-opus-5 100% | - | - | - | ledger system build + per-model breakdown; row written by the hook itself |
 
 ## What this ledger cannot measure
 

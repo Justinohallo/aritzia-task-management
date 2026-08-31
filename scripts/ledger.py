@@ -55,8 +55,8 @@ TABLE_MARKER = "| date | session_id |"
 COLUMNS = [
     "date", "session_id", "task_id", "criteria_ids", "wall_clock_min", "api_time_min",
     "leverage_ratio", "input_tokens", "output_tokens", "cache_write_tokens",
-    "cache_read_tokens", "api_cost_usd", "interventions (accepted/edited/rejected)",
-    "tests_added", "qa_result", "notes",
+    "cache_read_tokens", "api_cost_usd", "models (% of cost)",
+    "interventions (accepted/edited/rejected)", "tests_added", "qa_result", "notes",
 ]
 
 
@@ -92,6 +92,50 @@ def cost_usd(model, inp=0, out=0, cache_write_5m=0, cache_write_1h=0, cache_read
 # ---------------------------------------------------------------------------
 # Transcript parsing
 # ---------------------------------------------------------------------------
+
+def new_bucket():
+    """Zeroed accumulator, used for the session total and for each model."""
+    return {
+        "input": 0, "output": 0, "cache_write_5m": 0, "cache_write_1h": 0,
+        "cache_read": 0, "cost_usd": 0.0, "responses": 0,
+    }
+
+
+def fmt_models(by_model, total_cost):
+    """
+    Render the model mix as a share of cost, most expensive first.
+
+    Cost share, not token share, is the honest summary: cheap auxiliary models
+    can dominate a session's raw token count while accounting for a few percent
+    of what the session was actually worth.
+    """
+    parts = []
+    for model, b in sorted(by_model.items(), key=lambda kv: -kv[1]["cost_usd"]):
+        if total_cost > 0:
+            parts.append("%s %.0f%%" % (model, 100.0 * b["cost_usd"] / total_cost))
+        else:
+            parts.append(model)
+    return ", ".join(parts) or "-"
+
+
+def print_breakdown(summary, stream=sys.stdout):
+    """Per-model detail, for auditing which models actually served a session."""
+    total = summary["cost_usd"]
+    head = ("model", "resp", "input", "output", "cache write", "cache read", "cost $", "% cost")
+    print("%-22s %5s %12s %12s %14s %14s %10s %7s" % head, file=stream)
+    rows = sorted(summary["by_model"].items(), key=lambda kv: -kv[1]["cost_usd"])
+    for model, b in rows:
+        share = (100.0 * b["cost_usd"] / total) if total > 0 else 0.0
+        print("%-22s %5d %12s %12s %14s %14s %10.4f %6.1f%%" % (
+            model, b["responses"], "{:,}".format(b["input"]), "{:,}".format(b["output"]),
+            "{:,}".format(b["cache_write_5m"] + b["cache_write_1h"]),
+            "{:,}".format(b["cache_read"]), b["cost_usd"], share), file=stream)
+    t = summary["tokens"]
+    print("%-22s %5d %12s %12s %14s %14s %10.4f %6.1f%%" % (
+        "TOTAL", t["responses"], "{:,}".format(t["input"]), "{:,}".format(t["output"]),
+        "{:,}".format(t["cache_write_5m"] + t["cache_write_1h"]),
+        "{:,}".format(t["cache_read"]), total, 100.0 if total > 0 else 0.0), file=stream)
+
 
 def parse_ts(s):
     if not s:
@@ -163,12 +207,11 @@ def summarise(entries):
     if not usage_by_msg:
         raise LedgerError("transcript contains no priced assistant messages")
 
-    totals = {"input": 0, "output": 0, "cache_write_5m": 0, "cache_write_1h": 0, "cache_read": 0}
-    total_cost = 0.0
-    models = set()
+    totals = new_bucket()
+    by_model = {}
 
     for model, u in usage_by_msg.values():
-        models.add(model)
+        bucket = by_model.setdefault(model, new_bucket())
         cc = u.get("cache_creation") or {}
         w5 = int(cc.get("ephemeral_5m_input_tokens", 0) or 0)
         w1 = int(cc.get("ephemeral_1h_input_tokens", 0) or 0)
@@ -180,13 +223,17 @@ def summarise(entries):
         out = int(u.get("output_tokens", 0) or 0)
         rd = int(u.get("cache_read_input_tokens", 0) or 0)
 
-        totals["input"] += inp
-        totals["output"] += out
-        totals["cache_write_5m"] += w5
-        totals["cache_write_1h"] += w1
-        totals["cache_read"] += rd
-        # Price each response at its own model's rates - a session can mix models.
-        total_cost += cost_usd(model, inp, out, w5, w1, rd)
+        # Price each response at its own model's rates - a session can mix
+        # models, and the mix is exactly what the models column reports.
+        c = cost_usd(model, inp, out, w5, w1, rd)
+        for b in (totals, bucket):
+            b["input"] += inp
+            b["output"] += out
+            b["cache_write_5m"] += w5
+            b["cache_write_1h"] += w1
+            b["cache_read"] += rd
+            b["cost_usd"] += c
+            b["responses"] += 1
 
     # Wall clock: first to last timestamped event in the transcript.
     wall_min = 0.0
@@ -216,10 +263,11 @@ def summarise(entries):
 
     return {
         "tokens": totals,
-        "cost_usd": total_cost,
+        "cost_usd": totals["cost_usd"],
         "wall_clock_min": wall_min,
         "api_time_min": api_seconds / 60.0,
-        "models": sorted(models),
+        "by_model": by_model,
+        "models": sorted(by_model),
         "first_ts": min(all_ts) if all_ts else None,
         "responses": len(usage_by_msg),
     }
@@ -296,6 +344,7 @@ def build_row(summary, session_id, task_id, criteria_ids, notes):
         "cache_write_tokens": "{:,}".format(t["cache_write_5m"] + t["cache_write_1h"]),
         "cache_read_tokens": "{:,}".format(t["cache_read"]),
         "api_cost_usd": "%.2f" % summary["cost_usd"],
+        "models (% of cost)": fmt_models(summary["by_model"], summary["cost_usd"]),
         "interventions (accepted/edited/rejected)": "-",
         "tests_added": "-",
         "qa_result": "-",
@@ -397,9 +446,11 @@ def run_selfcheck():
 # Entry points
 # ---------------------------------------------------------------------------
 
-def run_from_transcript(transcript, session_id, root, notes):
+def run_from_transcript(transcript, session_id, root, notes, breakdown=False):
     entries = read_transcript(transcript)
     summary = summarise(entries)
+    if breakdown:
+        print_breakdown(summary)
     if not session_id:
         session_id = os.path.splitext(os.path.basename(transcript))[0]
     row = build_row(
@@ -413,7 +464,7 @@ def run_from_transcript(transcript, session_id, root, notes):
     print(
         "ledger.py: %s row for %s (task %s) - $%s, %s responses, models: %s"
         % (action, row["session_id"], row["task_id"], row["api_cost_usd"],
-           summary["responses"], ",".join(summary["models"])),
+           summary["responses"], row["models (% of cost)"]),
         file=sys.stderr,
     )
     return 0
@@ -426,6 +477,7 @@ def main(argv):
     ap.add_argument("--repo-root", help="repo root (default: derived from cwd)")
     ap.add_argument("--notes", help="notes cell for this row")
     ap.add_argument("--selfcheck", action="store_true", help="audit the price table against the reference figures")
+    ap.add_argument("--breakdown", action="store_true", help="print per-model token and cost detail")
     ap.add_argument("--backfill", help="JSON object describing a row to insert verbatim")
     args = ap.parse_args(argv)
 
@@ -442,7 +494,7 @@ def main(argv):
         return 0
 
     if args.transcript:
-        return run_from_transcript(args.transcript, args.session_id, root, args.notes)
+        return run_from_transcript(args.transcript, args.session_id, root, args.notes, args.breakdown)
 
     # Hook mode: hook JSON arrives on stdin.
     raw = sys.stdin.read()
@@ -457,7 +509,7 @@ def main(argv):
     if not transcript:
         raise LedgerError("hook payload has no transcript_path (keys: %s)" % sorted(hook))
     root = args.repo_root or repo_root(hook.get("cwd") or os.getcwd())
-    return run_from_transcript(transcript, hook.get("session_id"), root, args.notes)
+    return run_from_transcript(transcript, hook.get("session_id"), root, args.notes, args.breakdown)
 
 
 if __name__ == "__main__":

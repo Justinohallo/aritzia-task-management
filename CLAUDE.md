@@ -46,7 +46,10 @@ local state, not repository content.
 - Rates live in one constant, `PRICES_USD_PER_MTOK` in `scripts/ledger.py`.
 - `python3 scripts/ledger.py --selfcheck` prints the full cost arithmetic
   against a reference set of counts so the table can be checked line by line.
-- `python3 scripts/ledger.py --transcript <path>` re-derives a row by hand.
+- `python3 scripts/ledger.py --transcript <path>` re-derives a row by hand;
+  add `--breakdown` to print per-model token and cost detail, which shows
+  exactly which models served a session and what share of cost each accounted
+  for.
 - The hook fails loudly: on any error it prints to stderr, exits non-zero, and
   writes nothing. A missing row is never a silently corrupted row.
 
