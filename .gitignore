@@ -61,3 +61,7 @@ Thumbs.db
 .eslintcache
 .ruff_cache/
 .mypy_cache/
+
+# Ledger task-tagging state (per-session, local)
+.current-task
+.current-criteria
