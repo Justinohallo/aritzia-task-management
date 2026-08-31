@@ -98,6 +98,14 @@ in the status-check picker. So:
 Add the language-specific checks (lint, typecheck, test, build) to this
 same list once the stack is chosen.
 
+> **Why the workflow has no branch filter.** `Repo Guard` triggers on
+> `pull_request` with no `branches:` filter, on purpose. An earlier
+> version filtered to `main`, and a pull request opened *before* the
+> default branch was renamed to `main` never triggered it — the filter
+> didn't match the old branch name, and GitHub does not retroactively run
+> workflows after a rename. An unfiltered trigger survives renames and
+> also covers PRs into long-lived feature branches. Keep it that way.
+
 ---
 
 ## 3. Secret scanning
