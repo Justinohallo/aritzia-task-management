@@ -7,9 +7,11 @@ name: Repo Guard
 # Language-specific checks (lint, typecheck, test, build) get added as a
 # separate workflow once the stack lands.
 
-on:
-  pull_request:
-    branches: [main]
+# Runs on every pull request, whatever the target branch. Deliberately
+# not filtered to `main`: a branch filter silently disables the guard if
+# the default branch is ever renamed, and secrets are worth blocking on
+# PRs into long-lived feature branches too.
+on: pull_request
 
 # Least privilege: this workflow only ever reads the repo.
 permissions:
@@ -21,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out full history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
