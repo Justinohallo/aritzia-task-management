@@ -1,0 +1,13 @@
+# Code owners are automatically requested for review on any PR that
+# touches matching paths. Combined with the "Require review from Code
+# Owners" ruleset setting, this makes review non-optional.
+#
+# Later matches take precedence over earlier ones.
+
+# Default owner for everything in the repo
+*                       @Justinohallo
+
+# Repo protections, CI, and dependency config — changes here weaken or
+# strengthen the guardrails themselves, so they always need an owner's eyes.
+/.github/               @Justinohallo
+/docs/REPO-PROTECTIONS.md  @Justinohallo

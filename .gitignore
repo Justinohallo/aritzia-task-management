@@ -1,0 +1,63 @@
+# --- Secrets & local config (never commit these) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+secrets.*
+.secrets/
+
+# --- Dependencies ---
+node_modules/
+.pnp
+.pnp.js
+.yarn/
+vendor/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# --- Build output ---
+dist/
+build/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+*.tsbuildinfo
+
+# --- Test & coverage ---
+coverage/
+.coverage
+.nyc_output/
+.pytest_cache/
+htmlcov/
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Editors & OS ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+*.swp
+
+# --- Tooling caches ---
+.cache/
+.turbo/
+.eslintcache
+.ruff_cache/
+.mypy_cache/

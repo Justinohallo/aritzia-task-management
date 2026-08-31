@@ -1,0 +1,75 @@
+name: Repo Guard
+
+# Stack-agnostic safety net that runs on every pull request. It does not
+# know or care what language this project ends up in, so it is safe to
+# make a required status check today, before the stack is chosen.
+#
+# Language-specific checks (lint, typecheck, test, build) get added as a
+# separate workflow once the stack lands.
+
+on:
+  pull_request:
+    branches: [main]
+
+# Least privilege: this workflow only ever reads the repo.
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Secrets & large files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Collect changed files
+        id: changed
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA" > changed.txt
+          echo "Files changed in this PR:"
+          cat changed.txt
+
+      - name: Block secret-bearing files
+        run: |
+          # Paths that should never enter git history. Anything matching
+          # here fails the PR rather than being quietly committed.
+          PATTERN='(^|/)\.env($|\.)|\.pem$|\.p12$|\.pfx$|(^|/)id_rsa|(^|/)credentials\.json$|(^|/)service-account.*\.json$|(^|/)secrets\.'
+
+          # .env.example is the documented, secret-free template — allow it.
+          if grep -Ev '(^|/)\.env\.example$' changed.txt | grep -Eq "$PATTERN"; then
+            echo "::error::This PR adds files that look like they carry secrets:"
+            grep -Ev '(^|/)\.env\.example$' changed.txt | grep -E "$PATTERN" | sed 's/^/  - /'
+            echo ""
+            echo "Remove them from the branch and add the path to .gitignore."
+            echo "If a real secret was already pushed, rotate it — deleting the"
+            echo "file does not remove it from git history."
+            exit 1
+          fi
+          echo "No secret-bearing file paths found."
+
+      - name: Block oversized files
+        run: |
+          # 5 MB. Large binaries bloat the clone for everyone, forever —
+          # history rewrites are the only way back out.
+          LIMIT=5242880
+          FAILED=0
+          while IFS= read -r file; do
+            [ -f "$file" ] || continue
+            SIZE=$(stat -c%s "$file")
+            if [ "$SIZE" -gt "$LIMIT" ]; then
+              echo "::error file=$file::$file is $((SIZE / 1024 / 1024)) MB, over the 5 MB limit"
+              FAILED=1
+            fi
+          done < changed.txt
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo "Use Git LFS or external storage for large assets."
+            exit 1
+          fi
+          echo "No oversized files found."
