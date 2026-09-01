@@ -131,6 +131,7 @@ spec problem to fix upstream, not a model problem to work around.
 | 2026-09-01 | 1e07e9b8-88dc-5b13-9389-f24f23a631bf | ARCH-02 | - | 11.7 | 5.6 | 0.48 | 53 | 24,988 | 107,160 | 2,623,997 | 3.01 | claude-opus-5 100% | - | - | n/a (spec only) | Architect: re-planned TASKS.md as six concurrent-agent waves; contract freeze at T-01, T-06 and T-14 taken off the critical path; file-ownership map and merge rules added. No application code. |
 | 2026-09-01 | c6e5e0b7-6bb2-5887-9e12-5278ba684c17 | LEDGER-02 | - | 12.8 | 6.0 | 0.47 | 3,811 | 19,954 | 153,009 | 9,053,141 | 6.36 | claude-fable-5-1 100% | - | - | n/a | add claude-fable-5-1 to the price table (cache read 0.025x); tooling only, no application code |
 | 2026-09-01 | 1956c5c3-fa58-5210-93eb-80b25fbca702 | T-00 | - | 26.1 | 13.8 | 0.53 | 130 | 64,733 | 177,349 | 8,060,736 | 7.42 | claude-opus-5 100% | - | 0 | n/a | T-00 repo skills; closed via /task-close (dogfood). Interventions not counted: T-00 was authored and closed before review, so an accepted/edited/rejected split would have measured only what went unchallenged. Wave-aware from ARCH-02. |
+| 2026-09-01 | 65e109b6-9733-5120-93e6-939e021641a0 | OPS-01 | - | 7.0 | 6.5 | 0.94 | 1,327 | 27,130 | 160,860 | 2,019,109 | 5.09 | claude-fable-5-1 100% | - | - | - | operator runbook for cloud sessions + SessionStart hook; docs and tooling only, no application code |
 | 2026-09-01 | d005e148-8336-5876-8913-007a098145a6 | ARCH-03 | - | 19.4 | 13.0 | 0.67 | 14,531 | 62,424 | 210,310 | 3,366,617 | 8.31 | claude-fable-5-1 100% | - | - | n/a | Architect: pre-wave critic pass over the whole spec system, then the amendments. 15 findings (B-01..B-15 in BLOCKERS.md) resolved in one docs commit; T-16 added for the tooling follow-ups. No application code. |
 
 ## What this ledger cannot measure
@@ -148,6 +149,12 @@ spec problem to fix upstream, not a model problem to work around.
 - **Sessions where the hook never fired.** A crash, a `kill`, or a session run
   with hooks disabled leaves no row. Absence of a row is not evidence of absence
   of work.
+- **The last turn of a cloud session.** On Claude Code on the web the hook
+  writes the row into the session's container, and only a later turn can
+  commit it. The closing turn refreshes the row from the transcript before
+  committing (`docs/OPERATOR.md` §4), so the committed row is short by that
+  turn's final response only. The hook's own final write after that turn is
+  never pushed.
 - **Cache pricing nuance.** Where a response reports a cache-write total with no
   TTL breakdown, the script prices it at the cheaper 5-minute rate, which
   under-reports if the write was in fact a 1-hour entry.
