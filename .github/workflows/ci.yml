@@ -1,0 +1,57 @@
+name: CI
+
+# AC-CI-1: typecheck, lint, the test suite, a production build and the
+# bundle test run on every pull request, and a failure blocks the merge once
+# the job below is a required status check (AC-CI-2, a GitHub setting — see
+# docs/REPO-PROTECTIONS.md §2). No branch filter, for the same reason
+# repo-guard.yml has none: a filter silently disables the check if the
+# default branch is ever renamed. `push` to main keeps main's own status
+# visible, which is the wave gate in docs/TASKS.md.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck, lint, test, build, bundle
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # A dummy so the AC-API-3 bundle test has a value to search for. Never
+      # the real key: that lives only in Vercel's encrypted environment.
+      TASKS_API_KEY: ci-dummy-key-not-a-secret
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- --ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Bundle test (AC-API-3)
+        run: npm run test:bundle -- --ci

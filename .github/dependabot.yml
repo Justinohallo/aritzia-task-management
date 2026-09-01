@@ -12,12 +12,22 @@ updates:
     labels:
       - "dependencies"
 
-  # Add an entry per ecosystem once the stack is chosen, e.g.:
-  #
-  # - package-ecosystem: "npm"
-  #   directory: "/"
-  #   schedule:
-  #     interval: "weekly"
-  #   groups:
-  #     dev-dependencies:
-  #       dependency-type: "development"
+  # npm, grouped so a week of minor bumps is one pull request rather than
+  # twenty. package.json is owned by T-01 for the life of the build plan
+  # (docs/TASKS.md, File ownership), so these land as chore: PRs outside any
+  # task lane.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore"
+    labels:
+      - "dependencies"
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+      dev-dependencies:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
