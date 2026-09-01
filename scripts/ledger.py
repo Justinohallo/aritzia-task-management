@@ -52,6 +52,18 @@ PRICES_USD_PER_MTOK = {
 LEDGER_REL_PATH = "docs/LEDGER.md"
 TABLE_MARKER = "| date | session_id |"
 
+# Cells the script cannot derive and a human is expected to fill in. On an
+# update these are preserved from the existing row whenever the incoming value
+# is "-" - the Stop hook fires on every turn, so without this an annotation
+# survives only until the next one.
+MANUAL_COLUMNS = (
+    "criteria_ids",
+    "interventions (accepted/edited/rejected)",
+    "tests_added",
+    "qa_result",
+    "notes",
+)
+
 COLUMNS = [
     "date", "session_id", "task_id", "criteria_ids", "wall_clock_min", "api_time_min",
     "leverage_ratio", "input_tokens", "output_tokens", "cache_write_tokens",
@@ -352,6 +364,29 @@ def build_row(summary, session_id, task_id, criteria_ids, notes):
     }
 
 
+def keep_manual_cells(row, existing_line):
+    """
+    Carry hand-written cells forward from the row being replaced.
+
+    The hook re-derives and rewrites a session's row on every Stop. The columns
+    it cannot derive - notes, interventions, tests added, QA result - are filled
+    in by a human, and a blind overwrite silently discards them. A derived value
+    always wins; a "-" never overwrites something someone wrote.
+    """
+    cells = [c.strip() for c in existing_line.strip().strip("|").split("|")]
+    if len(cells) != len(COLUMNS):
+        # Row shape does not match the schema (hand-edited, or an older
+        # revision). Leave it to be replaced wholesale rather than mapping
+        # cells to the wrong columns.
+        return row
+    old = dict(zip(COLUMNS, cells))
+    merged = dict(row)
+    for col in MANUAL_COLUMNS:
+        if merged.get(col, "-") == "-" and old.get(col, "-") not in ("-", ""):
+            merged[col] = old[col]
+    return merged
+
+
 def upsert(ledger_path, row):
     """Replace the row with this session_id, else append. Atomic write."""
     if not os.path.exists(ledger_path):
@@ -367,16 +402,18 @@ def upsert(ledger_path, row):
     if header_i is None:
         raise LedgerError("no ledger table header found in %s" % ledger_path)
 
-    line = fmt_row(row)
     sid_cell = "| %s |" % row["session_id"]
     replaced = False
     for i in range(header_i + 2, len(lines)):
         if not lines[i].startswith("|"):
             break
         if sid_cell in lines[i]:
-            lines[i] = line
+            row = keep_manual_cells(row, lines[i])
+            lines[i] = fmt_row(row)
             replaced = True
             break
+
+    line = fmt_row(row)
 
     if not replaced:
         end = header_i + 2

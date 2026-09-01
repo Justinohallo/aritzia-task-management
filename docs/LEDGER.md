@@ -50,14 +50,18 @@ per-response `usage` objects, not from an estimate.
   --breakdown` prints the full per-model table behind this cell.
 - **`interventions`, `tests_added`, `qa_result`** are `-` unless filled in by
   hand. Nothing in the transcript reports them reliably, so the script does not
-  invent them.
+  invent them. **Once filled in, they survive.** The hook re-derives a session's
+  row on every stop, but it never overwrites a hand-written cell with `-` — it
+  carries `criteria_ids`, `interventions`, `tests_added`, `qa_result`, and
+  `notes` forward from the row it replaces. A derived value always wins; an
+  absent one never clobbers.
 
 ## Ledger
 
 | date | session_id | task_id | criteria_ids | wall_clock_min | api_time_min | leverage_ratio | input_tokens | output_tokens | cache_write_tokens | cache_read_tokens | api_cost_usd | models (% of cost) | interventions (accepted/edited/rejected) | tests_added | qa_result | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-08-31 | unrecorded (pre-hook) | SETUP-01 | - | 10.0 | 4.0 | 0.40 | 208 | 587 | 885,800 | 9,700,000 | 3.02 | unverified (no transcript) | - | - | - | backfilled from /cost; repo init, branch protection. Cost is as /cost reported it; it does not reconcile with Opus 5 list pricing for these counts (see `--selfcheck`). |
-| 2026-08-31 | 89cb008a-f78d-5c8f-bef3-e68cab039af7 | LEDGER-01 | - | 12.2 | 8.2 | 0.67 | 52 | 40,045 | 205,310 | 2,704,523 | 4.41 | claude-opus-5 100% | - | - | - | ledger system build + per-model breakdown; row written by the hook itself |
+| 2026-08-31 | 89cb008a-f78d-5c8f-bef3-e68cab039af7 | LEDGER-01 | - | 31.4 | 14.1 | 0.45 | 106 | 64,993 | 505,909 | 7,070,570 | 10.22 | claude-opus-5 100% | - | - | - | ledger system build + per-model breakdown; row written by the hook itself |
 
 ## What this ledger cannot measure
 
