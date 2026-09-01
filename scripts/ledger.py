@@ -28,10 +28,10 @@ from datetime import datetime, timezone
 
 # ---------------------------------------------------------------------------
 # PRICE TABLE - Anthropic list (first-party API) pricing, USD per 1M tokens.
-# Source: Anthropic public pricing. Verified 2026-08-31.
+# Source: Anthropic public pricing. Verified 2026-09-01.
 #
 # Multipliers applied to the base input rate, per Anthropic's caching docs:
-#   cache read        = 0.10x input
+#   cache read        = 0.10x input  (claude-fable-5-1: 0.025x, i.e. $0.25/MTok)
 #   cache write, 5m   = 1.25x input
 #   cache write, 1h   = 2.00x input
 # The 5m/1h split matters: pricing every write at 1.25x understates a session
@@ -44,6 +44,7 @@ PRICES_USD_PER_MTOK = {
     "claude-opus-4-8":   {"input": 5.00, "output": 25.00, "cache_read": 0.50, "cache_write_5m":  6.25, "cache_write_1h": 10.00},
     "claude-opus-4-7":   {"input": 5.00, "output": 25.00, "cache_read": 0.50, "cache_write_5m":  6.25, "cache_write_1h": 10.00},
     "claude-opus-4-6":   {"input": 5.00, "output": 25.00, "cache_read": 0.50, "cache_write_5m":  6.25, "cache_write_1h": 10.00},
+    "claude-fable-5-1":  {"input": 10.00, "output": 50.00, "cache_read": 0.25, "cache_write_5m": 12.50, "cache_write_1h": 20.00},
     "claude-fable-5":    {"input": 10.00, "output": 50.00, "cache_read": 1.00, "cache_write_5m": 12.50, "cache_write_1h": 20.00},
     "claude-sonnet-5":   {"input": 2.00, "output": 10.00, "cache_read": 0.20, "cache_write_5m":  2.50, "cache_write_1h":  4.00},
     "claude-sonnet-4-6": {"input": 3.00, "output": 15.00, "cache_read": 0.30, "cache_write_5m":  3.75, "cache_write_1h":  6.00},
