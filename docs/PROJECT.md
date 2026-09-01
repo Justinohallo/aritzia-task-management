@@ -68,7 +68,7 @@ from the brief.
 
 | Not doing | Why |
 |---|---|
-| Real auth provider (NextAuth, OAuth, JWT) | The brief specifies a locally persisted form with sessionStorage. Substituting a real provider would ignore an explicit instruction. Recorded as non-production in [ADR-0005](adr/0005-api-simulation-and-auth-boundary.md). |
+| Real auth provider (NextAuth, OAuth, JWT) | The brief specifies a locally persisted form with sessionStorage. Substituting a real provider would ignore an explicit instruction. Recorded as non-production in [ADR-0005](adr/0005-auth-and-secret-boundary.md). |
 | Multi-user / collaboration / assignment | Not in the brief. Invites sync, conflict, and permission questions that a 48-hour build cannot answer honestly. |
 | Real backend or database | The brief specifies localStorage for the list. A database would contradict the stated persistence model and add a deploy dependency. |
 | Task editing, reordering, priority, tags, search | Not in the brief. Create, complete, and delete are the stated operations. |
