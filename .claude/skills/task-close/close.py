@@ -441,10 +441,19 @@ def main(argv):
             "annotation is partial: %s not given. A half-filled row is worse than "
             "an empty one — supply all three." % ", ".join(missing)
         )
-    if not INTERVENTIONS_RE.match(args.interventions):
+    # "-" is a deliberate decline, not a forgotten flag: the count was
+    # considered and judged not worth recording. The note should say why.
+    if args.interventions != "-" and not INTERVENTIONS_RE.match(args.interventions):
         raise CloseError(
-            "--interventions %r is not accepted/edited/rejected, e.g. 7/3/1"
-            % args.interventions
+            "--interventions %r is not accepted/edited/rejected, e.g. 7/3/1. "
+            "Pass '-' to record deliberately that it was not counted, and say "
+            "why in --notes." % args.interventions
+        )
+    if args.interventions == "-" and not args.notes:
+        raise CloseError(
+            "--interventions '-' needs --notes saying why the count was not "
+            "taken. A blank cell with no reason reads as an oversight, and a "
+            "reader cannot tell it apart from one."
         )
     if not re.fullmatch(r"\d+", args.tests_added):
         raise CloseError("--tests-added %r is not a count" % args.tests_added)

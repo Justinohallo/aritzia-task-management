@@ -30,8 +30,12 @@ python3 .claude/skills/task-close/close.py \
 ```
 
 `interventions` is `accepted/edited/rejected` counted against **proposals the
-agent made**, not messages exchanged. `docs/LEDGER.md` defines each. The ratio
-is the number worth watching, so a guessed one is worse than none.
+agent made**, not messages exchanged. `docs/LEDGER.md:104` defines each. The
+ratio is the number worth watching, so a guessed one is worse than none.
+
+Pass `-` to decline the count deliberately — the script then requires
+`--notes` saying why. A blank cell with no reason is indistinguishable from an
+oversight, and the point of the column is that a reader can tell.
 
 Finally, commit. The script stages `docs/LEDGER.md` and prints the subject
 line to use — the row belongs with the work it measures.
