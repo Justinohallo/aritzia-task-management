@@ -131,7 +131,7 @@ spec problem to fix upstream, not a model problem to work around.
 | 2026-09-01 | 1e07e9b8-88dc-5b13-9389-f24f23a631bf | ARCH-02 | - | 11.7 | 5.6 | 0.48 | 53 | 24,988 | 107,160 | 2,623,997 | 3.01 | claude-opus-5 100% | - | - | n/a (spec only) | Architect: re-planned TASKS.md as six concurrent-agent waves; contract freeze at T-01, T-06 and T-14 taken off the critical path; file-ownership map and merge rules added. No application code. |
 | 2026-09-01 | c6e5e0b7-6bb2-5887-9e12-5278ba684c17 | LEDGER-02 | - | 12.8 | 6.0 | 0.47 | 3,811 | 19,954 | 153,009 | 9,053,141 | 6.36 | claude-fable-5-1 100% | - | - | n/a | add claude-fable-5-1 to the price table (cache read 0.025x); tooling only, no application code |
 | 2026-09-01 | 1956c5c3-fa58-5210-93eb-80b25fbca702 | T-00 | - | 26.1 | 13.8 | 0.53 | 130 | 64,733 | 177,349 | 8,060,736 | 7.42 | claude-opus-5 100% | - | 0 | n/a | T-00 repo skills; closed via /task-close (dogfood). Interventions not counted: T-00 was authored and closed before review, so an accepted/edited/rejected split would have measured only what went unchallenged. Wave-aware from ARCH-02. |
-| 2026-09-01 | 65e109b6-9733-5120-93e6-939e021641a0 | OPS-01 | - | 6.6 | 6.2 | 0.95 | 1,271 | 26,008 | 159,054 | 1,851,891 | 4.96 | claude-fable-5-1 100% | - | - | - | operator runbook for cloud sessions + SessionStart hook; docs and tooling only, no application code |
+| 2026-09-01 | 65e109b6-9733-5120-93e6-939e021641a0 | OPS-01 | - | 7.0 | 6.5 | 0.94 | 1,327 | 27,130 | 160,860 | 2,019,109 | 5.09 | claude-fable-5-1 100% | - | - | - | operator runbook for cloud sessions + SessionStart hook; docs and tooling only, no application code |
 
 ## What this ledger cannot measure
 
