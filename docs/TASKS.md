@@ -14,7 +14,7 @@
 > **Amended 2026-09-01 (ARCH-03).** A fresh-session critic pass over the
 > whole spec system found fifteen contradictions before wave 0 opened. Each
 > amendment below is marked *ARCH-03* and the findings are recorded as
-> `B-01..B-15` in [`BLOCKERS.md`](BLOCKERS.md). The pass repeats after any
+> `B-01..B-17` in [`BLOCKERS.md`](BLOCKERS.md). The pass repeats after any
 > Architect amendment, before the next wave opens.
 
 ## How to run a task
@@ -172,7 +172,10 @@ task after wave 0 creates a live region of its own. *(ARCH-03)*
 ### Rules for concurrent agents
 
 1. **One branch, one pull request, one task.** Branch off the latest `main` at
-   the start of the wave, never off another agent's branch. `feat/t-05-list`.
+   the start of the wave, never off another agent's branch. `feat/t-05-list`
+   from a terminal; a cloud session's platform-assigned `claude/<slug>-<suffix>`
+   is equally fine — the branch name is not where attribution lives
+   ([`OPERATOR.md`](OPERATOR.md) §7, `B-16`).
    **The pull request title is the squash-merge subject on `main`**
    ([`CONTRIBUTING.md`](../CONTRIBUTING.md)), so it carries the task ID and
    the criterion IDs: `feat(tasks): T-05 list, filter, complete, delete

@@ -12,7 +12,11 @@ feat/short-description     new functionality
 fix/short-description      bug fix
 chore/short-description    tooling, deps, config
 docs/short-description     documentation only
+claude/<slug>-<suffix>     assigned by Claude Code on the web; cannot be renamed
 ```
+
+Attribution does not depend on the branch name: the ledger row and the pull
+request title carry the task and criterion IDs.
 
 ## Pull requests
 

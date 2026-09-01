@@ -32,8 +32,9 @@ code.
 `ACCEPTANCE.md`. **The Builder never edits a spec file.** If a task cannot be
 built as specified — the spec is ambiguous, contradictory, or wrong — the
 Builder stops and writes a blocker in `docs/BLOCKERS.md` rather than
-deciding. A Builder that edits the spec to match what it built has destroyed
-the only independent measure of whether the build is correct.
+deciding — appending a row there is the one edit under `docs/` a Builder or
+QA session makes. A Builder that edits the spec to match what it built has
+destroyed the only independent measure of whether the build is correct.
 
 **QA** — verifies the build against `ACCEPTANCE.md` independently. Marks
 criteria met, and only with a named test.
