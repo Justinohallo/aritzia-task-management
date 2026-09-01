@@ -58,6 +58,7 @@ per-response `usage` objects, not from an estimate.
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-08-31 | unrecorded (pre-hook) | SETUP-01 | - | 10.0 | 4.0 | 0.40 | 208 | 587 | 885,800 | 9,700,000 | 3.02 | unverified (no transcript) | - | - | - | backfilled from /cost; repo init, branch protection. Cost is as /cost reported it; it does not reconcile with Opus 5 list pricing for these counts (see `--selfcheck`). |
 | 2026-08-31 | 89cb008a-f78d-5c8f-bef3-e68cab039af7 | LEDGER-01 | - | 12.2 | 8.2 | 0.67 | 52 | 40,045 | 205,310 | 2,704,523 | 4.41 | claude-opus-5 100% | - | - | - | ledger system build + per-model breakdown; row written by the hook itself |
+| 2026-09-01 | b4369396-4840-5623-8c6e-80a7449e6f70 | INTAKE-01 | - | 18.3 | 4.0 | 0.22 | 18 | 15,715 | 150,381 | 535,179 | 2.16 | claude-opus-5 100% | - | - | - | - |
 
 ## What this ledger cannot measure
 
