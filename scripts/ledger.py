@@ -10,6 +10,7 @@ Invoked as a Stop / SessionEnd hook (reads hook JSON on stdin), or manually:
 
     python3 scripts/ledger.py --transcript <path> [--session-id <id>]
     python3 scripts/ledger.py --selfcheck
+    python3 scripts/ledger.py --annotate latest --interventions 7/3/1 --tests-added 12
     python3 scripts/ledger.py --backfill '<json>'
 
 Failure policy: this script never writes a partial or guessed row. Anything it
@@ -367,16 +368,27 @@ def upsert(ledger_path, row):
     if header_i is None:
         raise LedgerError("no ledger table header found in %s" % ledger_path)
 
-    line = fmt_row(row)
     sid_cell = "| %s |" % row["session_id"]
     replaced = False
     for i in range(header_i + 2, len(lines)):
         if not lines[i].startswith("|"):
             break
         if sid_cell in lines[i]:
-            lines[i] = line
+            # Preserve hand-supplied cells. The hook re-runs on every stop and
+            # rewrites the whole line from the transcript; without this, an
+            # annotation made mid-session is silently destroyed the next time
+            # the model stops talking. Measured cells always take the new value.
+            prior = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+            if len(prior) == len(COLUMNS):
+                prior = dict(zip(COLUMNS, prior))
+                for col in ANNOTATABLE:
+                    if row.get(col, "-") in ("", "-") and prior.get(col, "-") not in ("", "-"):
+                        row[col] = prior[col]
+            lines[i] = fmt_row(row)
             replaced = True
             break
+
+    line = fmt_row(row)
 
     if not replaced:
         end = header_i + 2
@@ -394,6 +406,86 @@ def upsert(ledger_path, row):
             os.unlink(tmp)
         raise
     return "updated" if replaced else "appended"
+
+
+# ---------------------------------------------------------------------------
+# Annotation - the columns no transcript can report
+# ---------------------------------------------------------------------------
+
+# Cells a human fills in. Everything else on a row is measured from the
+# transcript and must never be editable by hand: a ledger whose token counts
+# can be typed over is not evidence of anything.
+ANNOTATABLE = {
+    "criteria_ids": "acceptance criterion ids this task covered, comma separated",
+    "interventions (accepted/edited/rejected)": "human interventions as a/e/r, e.g. 7/3/1",
+    "tests_added": "count of tests added in this session",
+    "qa_result": "pass | fail | partial | n/a",
+    "notes": "free text",
+}
+
+
+def annotate(ledger_path, session_id, values):
+    """Set human-supplied cells on an existing row. Measured cells are refused."""
+    bad = [k for k in values if k not in ANNOTATABLE]
+    if bad:
+        raise LedgerError(
+            "refusing to annotate measured column(s) %s. Only %s may be set by "
+            "hand; the rest are derived from the transcript." % (bad, sorted(ANNOTATABLE))
+        )
+    if not os.path.exists(ledger_path):
+        raise LedgerError("%s does not exist" % ledger_path)
+
+    with open(ledger_path, encoding="utf-8") as fh:
+        lines = fh.read().split("\n")
+
+    header_i = next((i for i, l in enumerate(lines) if l.startswith(TABLE_MARKER)), None)
+    if header_i is None:
+        raise LedgerError("no ledger table header found in %s" % ledger_path)
+
+    data_rows = []
+    for i in range(header_i + 2, len(lines)):
+        if not lines[i].startswith("|"):
+            break
+        data_rows.append(i)
+    if not data_rows:
+        raise LedgerError("ledger table has no data rows to annotate")
+
+    if session_id == "latest":
+        target = data_rows[-1]
+    else:
+        matches = [i for i in data_rows if ("| %s |" % session_id) in lines[i]]
+        if not matches:
+            raise LedgerError(
+                "no ledger row for session %r. Use --annotate latest, or check "
+                "the session_id column." % session_id
+            )
+        target = matches[0]
+
+    cells = [c.strip() for c in lines[target].strip().strip("|").split("|")]
+    if len(cells) != len(COLUMNS):
+        raise LedgerError(
+            "row has %d cells but the schema has %d columns; refusing to guess "
+            "which is which." % (len(cells), len(COLUMNS))
+        )
+
+    row = dict(zip(COLUMNS, cells))
+    for k, v in values.items():
+        if "|" in v:
+            raise LedgerError("annotation value for %r contains a pipe" % k)
+        row[k] = v or "-"
+
+    lines[target] = fmt_row(row)
+
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(ledger_path) or ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write("\n".join(lines))
+        os.replace(tmp, ledger_path)
+    except Exception:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+    return row["session_id"]
 
 
 # ---------------------------------------------------------------------------
@@ -479,12 +571,36 @@ def main(argv):
     ap.add_argument("--selfcheck", action="store_true", help="audit the price table against the reference figures")
     ap.add_argument("--breakdown", action="store_true", help="print per-model token and cost detail")
     ap.add_argument("--backfill", help="JSON object describing a row to insert verbatim")
+    ap.add_argument("--annotate", metavar="SESSION_ID",
+                    help="set human-supplied cells on an existing row; 'latest' targets the last row")
+    ap.add_argument("--criteria-ids", help="with --annotate: acceptance criterion ids covered")
+    ap.add_argument("--interventions", help="with --annotate: accepted/edited/rejected, e.g. 7/3/1")
+    ap.add_argument("--tests-added", help="with --annotate: count of tests added")
+    ap.add_argument("--qa-result", help="with --annotate: pass | fail | partial | n/a")
     args = ap.parse_args(argv)
 
     if args.selfcheck:
         return run_selfcheck()
 
     root = args.repo_root or repo_root(os.getcwd())
+
+    if args.annotate:
+        supplied = {
+            "criteria_ids": args.criteria_ids,
+            "interventions (accepted/edited/rejected)": args.interventions,
+            "tests_added": args.tests_added,
+            "qa_result": args.qa_result,
+            "notes": args.notes,
+        }
+        supplied = {k: v for k, v in supplied.items() if v is not None}
+        if not supplied:
+            raise LedgerError(
+                "--annotate given with nothing to set. Supply at least one of "
+                "--criteria-ids, --interventions, --tests-added, --qa-result, --notes."
+            )
+        sid = annotate(os.path.join(root, LEDGER_REL_PATH), args.annotate, supplied)
+        print("ledger.py: annotated %s (%s)" % (sid, ", ".join(sorted(supplied))), file=sys.stderr)
+        return 0
 
     if args.backfill:
         data = json.loads(args.backfill)
