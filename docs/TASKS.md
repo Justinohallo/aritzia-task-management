@@ -4,8 +4,10 @@
 > progress.
 >
 > **Appetite:** P1 complete by 2026-09-02 17:00 PT (confirmed).
-> **Estimated:** ~16.75 focused hours of work across ~15 sessions —
+> **Estimated:** ~17.5 focused hours of work across ~16 sessions —
 > **~9.75 hours of wall clock** when run as six waves of concurrent agents.
+> T-00 adds 45m of work and no wall clock: it runs inside wave 0, alongside
+> the longer T-01.
 > See [Running in parallel](#running-in-parallel).
 
 ## How to run a task
@@ -42,6 +44,7 @@ wrong, the wave is wrong too.
 
 | # | Task | Criteria | Est. | Wave | Depends on |
 |---|---|---|---|---|---|
+| **T-00** | Repo skills: `task-start`, `task-close` | — (tooling) | 45m | **0** | — |
 | **T-01** | Scaffold, contracts, and CI | `AC-QUAL-1..2`, `AC-CI-1..2` | 90m | **0** | — |
 | **T-02** | Auth and routing | `AC-AUTH-1..9`, `AC-NAV-1..4` | 75m | **1** | T-01 |
 | **T-03** | Task provider and persistence | `AC-STATE-1..6`, `AC-AUTH-10` | 75m | **1** | T-01 |
@@ -84,7 +87,7 @@ Roughly 11h once merge and CI time at each boundary is counted.
 
 | Wave | Agents | Tasks | Wall clock | Gate to open the next wave |
 |---|---|---|---|---|
-| **0** | 1 | T-01 | 90m | contracts exist and typecheck; CI required on `main` |
+| **0** | 2 | T-00 ‖ T-01 | 90m | contracts exist and typecheck; CI required on `main` |
 | **1** | 3 | T-02 ‖ T-03 ‖ T-06 | 75m | all three merged, `main` green |
 | **2** | 3 | T-04 ‖ T-05 ‖ T-07 | 90m | all three merged, `main` green 🏁 *app works* |
 | **3** | 1 | T-08 | 90m | merged, `main` green 🏁 *brief met* |
@@ -108,6 +111,7 @@ found a spec gap and writes a blocker.**
 
 | Task | Writes | Reads (never writes) |
 |---|---|---|
+| **T-00** | `.claude/skills/**`, `scripts/task.sh` | — |
 | **T-01** | everything — config, CI, `package.json`, `components/ui/**`, all contract files | — |
 | **T-02** | `app/login/**`, `app/page.tsx`, `app/(protected)/layout.tsx`, `lib/auth/**` | contracts |
 | **T-03** | `lib/tasks/provider.tsx`, `lib/tasks/reducer.ts`, `lib/tasks/storage.ts`, `lib/tasks/hooks.ts` | `lib/tasks/actions.ts`, `lib/tasks/schema.ts` |
@@ -189,6 +193,31 @@ it.
 ---
 
 ## Task detail
+
+### T-00 · Repo skills
+tooling · 45m · **wave 0** — parallel with T-01, no shared files
+
+Two Claude Code skills under `.claude/skills/` that make the `CLAUDE.md`
+session ritual executable: `task-start` claims a task and loads its spec
+context; `task-close` verifies rules 3, 4, and 5 mechanically and writes the
+ledger annotation. Scripts are bash or stdlib Python, matching `scripts/`.
+No runtime dependency, no application code.
+
+Under the wave model the skills carry two further jobs, because both are
+constraints that a person will not reliably check three times in parallel:
+
+- `task-start` gates on **the whole preceding wave**, not just the task's
+  named dependency — rule 2 of *Rules for concurrent agents* is what keeps
+  three agents building against the same contracts.
+- `task-close` checks the branch's changed files against the **File ownership**
+  table above. One writer per path per wave is what makes three concurrent
+  pull requests merge, and it is a harder constraint than the dependency graph.
+
+**Done when:** `/task-close` runs successfully on the T-00 session itself
+and writes its ledger annotation.
+
+**Time box:** if this passes 60m, ship `task-start` as SKILL.md only and
+leave `task-close` as a checklist. T-01 does not wait for this.
 
 ### T-01 · Scaffold, contracts, and CI
 `AC-QUAL-1`, `AC-QUAL-2`, `AC-CI-1`, `AC-CI-2` · 90m · **wave 0, solo**
