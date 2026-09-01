@@ -15,7 +15,9 @@ case "${1:-}" in
   "")
     if [[ -f "$TASK_FILE" ]]; then
       printf 'task:     %s\n' "$(cat "$TASK_FILE")"
-      [[ -f "$CRIT_FILE" ]] && printf 'criteria: %s\n' "$(cat "$CRIT_FILE")"
+      if [[ -f "$CRIT_FILE" ]]; then
+        printf 'criteria: %s\n' "$(cat "$CRIT_FILE")"
+      fi
     else
       echo "no current task set. Run: scripts/task.sh <TASK-ID>" >&2
       exit 1
