@@ -89,9 +89,9 @@ You are the Builder for T-NN. Read CLAUDE.md first.
 3. Commit as you go with Conventional Commits and the criterion IDs in
    brackets. Push after every commit.
 4. If the spec is ambiguous, contradictory, or would require writing a file
-   this task does not own, stop and tell me — that is a blocker for the
-   Architect. Do not edit any file under docs/ and do not change the spec to
-   match what you built.
+   this task does not own, stop: append a row to docs/BLOCKERS.md, push, and
+   tell me — that is a blocker for the Architect. Do not edit any other file
+   under docs/ and do not change the spec to match what you built.
 5. When the task's "Done when" line holds, report what you built, what you
    tested, and anything you were unsure about. Do not run /task-close yet.
 ```
@@ -106,10 +106,10 @@ session from `main`:
 
 ```
 You are the Architect. Read CLAUDE.md. Do not write application code.
-Here is a blocker from the T-NN Builder: <paste the session's message>.
-Resolve it by amending the spec (docs/PROJECT.md, docs/ACCEPTANCE.md,
-docs/adr/, docs/TASKS.md) in its own docs: commit, push, and tell me what
-changed and which open sessions need to rebase.
+Resolve blocker B-NN in docs/BLOCKERS.md (raised by the T-NN Builder).
+Amend the spec (docs/PROJECT.md, docs/ACCEPTANCE.md, docs/adr/, docs/TASKS.md)
+in its own docs: commit, fill in the row's Resolution and Commit columns,
+push, and tell me what changed and which open sessions need to rebase.
 ```
 
 Set the task before it starts: `scripts/task.sh ARCH-NN` (the skill is
@@ -123,8 +123,10 @@ no shared context with any Builder:
 You are QA for T-13. Read CLAUDE.md. Run scripts/task.sh T-13.
 Verify every criterion in docs/ACCEPTANCE.md against the deployed build at
 <Vercel URL> and the test suite on main. For each criterion report met,
-partially met, or not met, naming the test that proves it. Write no
-application code. Findings become tasks for the Architect; list them.
+partially met, or not met, naming the test that proves it — or, for the
+seven ◉-eligible criteria, the manual procedure and date. Write no
+application code and no spec. Append each finding as a row in
+docs/BLOCKERS.md; the Architect turns them into tasks.
 ```
 
 ### Starting from the terminal instead
@@ -195,7 +197,8 @@ will actually see:
    A title without the IDs puts an unattributed commit on `main` for good.
 3. Fill in the PR template's *How this was verified*. The session's done
    report has the content.
-4. Wait for **Repo Guard** and, after T-01, the CI workflow. Red CI: open the
+4. Wait for **Repo Guard** and, after T-01, the CI workflow (typecheck,
+   lint, test, then `next build` and the `AC-API-3` bundle test). Red CI: open the
    CI status bar and turn on **Auto-fix**, or paste the failure into the
    session. The session stays live after the PR exists.
 5. **Squash and merge.** Branches delete themselves.
@@ -224,7 +227,8 @@ main ─ gate ────┼── session B: T-03 ──┼──── merge 
 4. The wave is closed when the last PR is in. Only then start the next.
 
 Wave 4 has a special case: T-09 merges before T-10, and T-10 rebases. Wave 5
-is sequential (T-11 → T-12 → T-13), with T-14 running alongside from wave 4.
+is a chain (T-11 → T-12 → T-13) with T-14 running alongside it; T-14 is a
+wave-5 task since ARCH-03 (it sat at "wave 4–5", which deadlocked the gate).
 
 ## 7. What is different in the cloud
 
@@ -234,7 +238,7 @@ the cloud does not match, and what to do about each.
 | Local ritual | In a cloud session | What you do |
 |---|---|---|
 | `/clear` between tasks | Not available. | Nothing — one session per task is the natural unit. Never send a second task to a finished session. |
-| `feat/t-05-list` branch names (`TASKS.md` rule 1) | The platform names the branch `claude/<slug>-<suffix>` and the git proxy only allows pushes to that branch. | Accept it. Attribution comes from the ledger row and the PR title, not the branch name. **This is a spec finding for the Architect**: rule 1 and `CONTRIBUTING.md` branch naming cannot be followed from the web. |
+| `feat/t-05-list` branch names (`TASKS.md` rule 1) | The platform names the branch `claude/<slug>-<suffix>` and the git proxy only allows pushes to that branch. | Accept it. Attribution comes from the ledger row and the PR title, not the branch name. Resolved as `B-16`: rule 1 and `CONTRIBUTING.md` now accept platform-named branches. |
 | `.current-task` persists between sessions on your disk | The container starts clean every session. | The Builder prompt runs `/task-start` first. An untagged row means the prompt was not followed — say so in that row's `notes`, do not hand-edit `task_id`. |
 | `main` is on disk | The clone has only the session branch. | The `SessionStart` hook fetches `origin/main`. Without it `task-close` cannot find the base and fails. |
 | `Stop` hook writes the row while you are still in the session | Same, but the row lands in a container you cannot see. | The close turn commits it (§4). Work left uncommitted when a session expires is gone. |

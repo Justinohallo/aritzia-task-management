@@ -1,6 +1,6 @@
 # PROJECT.md — Aritzia Task Management
 
-> **Status:** specification complete, build not started.
+> **Status:** specification complete and critic-reviewed (ARCH-03, 2026-09-01 — see [`BLOCKERS.md`](BLOCKERS.md)), build not started.
 > **Written:** 2026-09-01 · **Due:** 2026-09-02 17:00 PT (confirmed)
 > **Source of truth for:** `docs/ACCEPTANCE.md`, `docs/adr/`, `docs/TASKS.md`
 
@@ -107,8 +107,9 @@ it is not deleted, and it is not hidden.
 ## 7. Appetite and phasing
 
 **Appetite: ~48 hours wall clock to Wednesday 17:00 PT.** The stakeholder has
-confirmed capacity to complete P1 in that window; the plan is sized at ~16.5
-focused hours (`TASKS.md`).
+confirmed capacity to complete P1 in that window; the plan is sized at 17h15m
+of build plus two short tooling tasks, or 9h45m of wall clock in waves
+(`TASKS.md` is the source of these numbers; this document quotes it).
 
 | Phase | Contents | Status |
 |---|---|---|
@@ -125,9 +126,9 @@ Nothing merges after the freeze.
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| **Over-engineering read as poor judgment** — the stakeholder's stated top risk. Five ADRs and a session ledger around a to-do list can read as inability to size a solution. | High | Meet it head-on rather than hope it goes unasked. The NOT list is a deck slide. Each ADR states what was *not* built and why. The proportionality argument is made out loud in the first two minutes. |
+| **Over-engineering read as poor judgment** — the stakeholder's stated top risk. Six ADRs and a session ledger around a to-do list can read as inability to size a solution. | High | Meet it head-on rather than hope it goes unasked. The NOT list is a deck slide. Each ADR states what was *not* built and why. The proportionality argument is made out loud in the first two minutes. |
 | **Demo breaks during the presentation** | High | Deploy freeze + dry-run as a tracked task. Local fallback recorded in case the live URL fails. |
-| **Not finishing** | Medium | Phasing. P1 is ordered so that the first four tasks alone produce a working, demonstrable app; everything after that improves a thing that already runs. |
+| **Not finishing** | Medium | Phasing. P1 is ordered so that the first two waves (T-01 through T-07) produce a working, demonstrable app; everything after that improves a thing that already runs. |
 | **"This is just AI slop"** | Medium | The ledger, the ADRs, and the intervention log are the counter-argument. Commits reference acceptance criteria, so the reviewer can trace requirement → criterion → test → commit. |
 | **Weak presentation, strong code** | Medium | Deck is a tracked, ledgered task with a reserved block, generated from these specs. |
 | **Rate-limit / optimistic-rollback design consumes disproportionate time** | Medium | It is the most interesting engineering in the brief and the largest creativity payoff, so it is deliberately funded — but it is scheduled after the core CRUD path works, never before. |
@@ -159,12 +160,17 @@ They are recorded so they can be challenged rather than discovered.
 
 P1 is done when all of the following hold:
 
-1. Every acceptance criterion in `docs/ACCEPTANCE.md` is marked met, with the
-   test that proves it named.
-2. `npm run typecheck`, `npm run lint`, and `npm test` pass clean in CI on the
-   pull request.
+1. Every acceptance criterion in `docs/ACCEPTANCE.md` is marked met: `☑` with
+   the test that proves it named, or — for the seven criteria the legend
+   lists as `◉`-eligible and no others — `◉` with the manual procedure and
+   date named.
+2. `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and
+   `npm run test:bundle` pass clean in CI on the pull request.
 3. The live Vercel URL serves the app, and the full path — log in, add, filter,
    complete, delete, reload, log out — works on a phone-width viewport.
 4. No private key appears in any client bundle, asserted by a test.
-5. `docs/LEDGER.md` has a row per task, and the totals reconcile.
+5. `docs/LEDGER.md` has a hook-written row per task, and every hook-written
+   row reconciles under `scripts/ledger.py --selfcheck`. The backfilled
+   `SETUP-01` row is the documented exception and stays visibly
+   unreconciled, as `LEDGER.md` explains.
 6. The deck is written and rehearsed once against the live URL.

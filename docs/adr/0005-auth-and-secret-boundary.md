@@ -30,7 +30,11 @@ production pattern.**
 - **The API's private key is a separate matter and is handled properly**: read
   only from server environment inside a Route Handler, never prefixed
   `NEXT_PUBLIC_`, never imported into a client module, and asserted absent from
-  the production client bundle by an automated test (`AC-API-3`).
+  the production client bundle by an automated test (`AC-API-3`). The browser
+  never sends it: the Route Handler is the caller that presents the key to
+  the simulated upstream ([ADR-0004](0004-api-simulation.md), as amended by
+  ARCH-03). Nothing authenticates the browser to the Route Handler — the
+  client-side guard is a UX affordance, as stated below.
 
 ## Why the pattern is followed rather than improved
 
