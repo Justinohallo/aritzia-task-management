@@ -10,7 +10,17 @@ line of the brief to the code that implements it and the test that proves it.
 
 **Commit convention:** `feat(tasks): add optimistic delete [AC-DEL-1, AC-API-9]`
 
-**Status legend:** `☐` not started · `◐` implemented, untested · `☑` met, test named
+**Status legend:** `☐` not started · `◐` implemented, untested · `☑` met, test named · `◉` verified manually, procedure and date named
+
+`◉` exists for exactly seven criteria that no Jest test can prove, and for no
+others: `AC-UI-1..4` (jsdom does not lay out), `AC-A11Y-4` (a keyboard walk
+is a judgment), `AC-CI-2` (a GitHub setting), `AC-DEP-1` (a phone). Each is
+marked `◉` only with the procedure, the viewport or device, and the date
+written next to it. `◉` is not a soft `☑`: a criterion outside the seven is
+never marked `◉`, and a test that names an ID and asserts nothing does not
+earn `☑`. *(ARCH-03: rule 5, `AC-TEST-1` and the definition of done all
+required a named test for every criterion while ADR-0006 said four of them
+could not have one.)*
 
 ---
 
@@ -219,7 +229,7 @@ And it is marked overdue in the list
 Given a create request is in flight
 When I activate submit again before it resolves
 Then only one task is created
-And the submit control is disabled while the request is pending
+And the submit control is disabled while the request is in flight
 ```
 
 ---
@@ -389,16 +399,24 @@ Given the application is built for production
 When the client bundle is searched for the private key's value and its variable name
 Then neither appears
 And the key is read only from server-side environment configuration
+And the browser's request to the Route Handler carries no key
 ```
 > Asserted by an automated test against build output, not by inspection. This
 > is the criterion that makes the secret-handling claim checkable.
 
 #### AC-API-4 — The API rejects unauthenticated requests
 ```gherkin
-Given a request is made to the API without a valid private key
+Given the simulated upstream is called without a valid private key
 Then the response status is 401
 And no mutation occurs
+And a Route Handler whose server environment lacks the key passes that 401 through to the browser
 ```
+> The browser never holds or sends the key (`AC-API-3`), so the caller here
+> is the Route Handler, not the client. The Route Handler presents the key to
+> an in-process upstream module that demands it — see [ADR-0004](adr/0004-api-simulation.md)
+> as amended. *ARCH-03:* the earlier wording made the Route Handler both the
+> key-requiring API and the only endpoint the browser can reach, which is a
+> `401` on every request.
 
 #### AC-API-5 — The API rate-limits
 ```gherkin
@@ -432,6 +450,9 @@ Then it appears in the list before the API responds
 And when the API responds successfully
 Then the provisional record is reconciled with the server's record without the row remounting or reordering unexpectedly
 ```
+> Reconciliation is by the client-generated `id`; the server echoes `id` and
+> `createdAt` and assigns neither (the T-01 contract), so the row's key and
+> its sort position (`AC-LIST-3`) survive the round trip. *(ARCH-03)*
 
 #### AC-API-9 — Optimistic delete with rollback
 ```gherkin
@@ -441,6 +462,9 @@ When the API call ultimately fails
 Then the task reappears in its previous position
 And an error is announced in a live region
 ```
+> Position is derived at render (`AC-LIST-3`), so restoring the record
+> restores the position; the criterion asserts the visible outcome, not an
+> index.
 
 #### AC-API-10 — Failure and latency are deterministic under test
 ```gherkin
@@ -454,8 +478,8 @@ And no test depends on real elapsed time or on Math.random
 #### AC-API-11 — In-flight state is visible and announced
 ```gherkin
 Given a create or delete request is in flight
-Then a pending indicator is shown for the affected item or control
-And the pending state is conveyed to assistive technology, not by spinner alone
+Then an in-flight indicator is shown for the affected item or control
+And the in-flight state is conveyed to assistive technology, not by spinner alone
 ```
 
 #### AC-API-12 — Rate limiting is distinguishable from other errors
@@ -638,7 +662,8 @@ And it carries a comment explaining why
 ```gherkin
 Given this document
 Then each criterion ID appears in at least one test name or describe block
-And a criterion with no test is not marked met
+Or, for the seven ◉-eligible criteria only, a manual procedure and date are named beside it
+And a criterion with neither is not marked met
 ```
 
 #### AC-TEST-2 — Tests assert behaviour through accessible queries
@@ -668,7 +693,7 @@ And the threshold is enforced by the test runner, not merely reported
 #### AC-CI-1 — Checks run on every pull request
 ```gherkin
 Given a pull request is opened
-Then typecheck, lint, and the test suite run in CI
+Then typecheck, lint, the test suite, a production build, and the bundle test run in CI
 And a failure blocks the merge
 ```
 
@@ -696,7 +721,7 @@ taken silently during the build.
 | ID | Ambiguity | Readings | **Resolution** |
 |---|---|---|---|
 | **AM-1** | "Use pages for the log in form and user list" — App Router or Pages Router? | (a) Two distinct routes; (b) literally the Next.js Pages Router. | **App Router.** Distinct routes satisfy the phrase under either reading. Route Handlers keep the private key server-side by construction, which is the strongest available answer to the secret-handling requirement. Recorded with the wording called out explicitly in [ADR-0001](adr/0001-app-router.md) so the choice reads as deliberate. |
-| **AM-2** | "Simulate an API call" — how far does simulation go? | (a) A `setTimeout` in the client; (b) a real network round trip to a server route that enforces the key and the rate limit. | **(b).** A client-side timer cannot demonstrate server-side key handling or a 429, which the same sentence explicitly asks about. The simulation is a Next.js Route Handler that validates the key, enforces a limit, and injects latency. Everything the brief mentions becomes observable and testable. |
+| **AM-2** | "Simulate an API call" — how far does simulation go? | (a) A `setTimeout` in the client; (b) a real network round trip to a server route that enforces the key and the rate limit. | **(b).** A client-side timer cannot demonstrate server-side key handling or a 429, which the same sentence explicitly asks about. The simulation is two server-side layers: a Next.js Route Handler that holds the key, and an in-process upstream module that demands it, enforces a limit, and injects latency. The browser never sends the key. Everything the brief mentions becomes observable and testable. |
 | **AM-3** | Should the simulation fail randomly? | (a) Random failure looks realistic; (b) deterministic, injectable failure is testable. | **(b), with a seeded default.** Random failure makes the Jest requirement unsatisfiable without flakes. Failure behaviour is driven by injectable configuration; the deployed demo uses a fixed, documented profile. See assumption **A-5**. |
 | **AM-4** | Are past due dates permitted? | (a) Block them; (b) allow and mark overdue. | **(b).** Blocking prevents logging work that is already late — the common real case. Overdue is a display concern. `AC-ADD-7`, `AC-LIST-4`. |
 | **AM-5** | What order does the list use? | Unspecified. | **Due date ascending, then creation time ascending.** Unspecified ordering is untestable. `AC-LIST-3`. |

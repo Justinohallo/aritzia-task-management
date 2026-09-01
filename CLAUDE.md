@@ -20,6 +20,7 @@ can be presented as evidence.
 | [`docs/adr/`](docs/adr/) | Decisions already taken. Do not relitigate silently |
 | [`docs/TASKS.md`](docs/TASKS.md) | The ordered build plan |
 | [`docs/LEDGER.md`](docs/LEDGER.md) | One row per session, with cost |
+| [`docs/BLOCKERS.md`](docs/BLOCKERS.md) | Where a Builder or QA session writes a blocker, and where the Architect records its resolution |
 
 ## Roles
 
@@ -30,9 +31,9 @@ code.
 **Builder** — implements tasks from `TASKS.md` against the criteria in
 `ACCEPTANCE.md`. **The Builder never edits a spec file.** If a task cannot be
 built as specified — the spec is ambiguous, contradictory, or wrong — the
-Builder stops and writes a blocker rather than deciding. A Builder that edits
-the spec to match what it built has destroyed the only independent measure of
-whether the build is correct.
+Builder stops and writes a blocker in `docs/BLOCKERS.md` rather than
+deciding. A Builder that edits the spec to match what it built has destroyed
+the only independent measure of whether the build is correct.
 
 **QA** — verifies the build against `ACCEPTANCE.md` independently. Marks
 criteria met, and only with a named test.
@@ -76,6 +77,12 @@ commit that touches application code and references no criterion is either
 work nobody asked for, or a criterion missing from `ACCEPTANCE.md`. Both are
 problems, and both are found by this rule.
 
+`main` is squash-merged, so the only subject that survives there is the pull
+request title. **The PR title carries the task ID and the criterion IDs** in
+the same form — `feat(tasks): T-05 list, filter, complete, delete
+[AC-LIST-1..4, …]` — or the traceability this rule exists for ends at the
+branch.
+
 Exempt: `chore:` commits for tooling, config, and the ledger; `docs:` commits
 for the spec files themselves.
 
@@ -101,6 +108,11 @@ Nothing in `ACCEPTANCE.md` is marked `☑` without a test that can be pointed
 at. `◐` — implemented but untested — is a valid and honest state. Marking a
 criterion met because the code "obviously works" is how a suite ends up
 proving nothing.
+
+Seven criteria cannot have a Jest test, and `ACCEPTANCE.md`'s legend names
+them. Those, and only those, are marked `◉` — verified manually — with the
+procedure and the date written beside them. `◉` on any other criterion is a
+rule-5 violation dressed up.
 
 ### 6. The spec is the source of truth, and it is allowed to be wrong
 

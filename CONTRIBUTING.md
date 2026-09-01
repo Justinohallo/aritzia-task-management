@@ -21,20 +21,32 @@ docs/short-description     documentation only
    is two PRs.
 3. Fill out the PR template — particularly how you verified the change.
 4. All required status checks must pass.
-5. At least one approving review is required before merge.
+5. The PR title is the squash-merge subject on `main`, so it carries the
+   task ID and the acceptance criteria the PR satisfies:
+   `feat(tasks): T-05 list, filter, complete, delete [AC-LIST-1..4, AC-FILT-1..6]`.
+   See `CLAUDE.md` rule 3.
+6. Required approvals are `0` while this repository has one maintainer —
+   GitHub will not let an author approve their own pull request, so a
+   requirement of `1` would block every merge
+   (see [`docs/REPO-PROTECTIONS.md`](docs/REPO-PROTECTIONS.md)). Review is
+   the author reading the diff against its criteria before merging. The
+   moment a second person joins, this becomes one approving review.
 
 ## Commits
 
 Use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
-feat: add task assignment to project view
-fix: prevent duplicate task creation on double submit
-chore: bump actions/checkout to v4
-docs: document local setup
+feat(tasks): optimistic delete with rollback [AC-DEL-1, AC-API-9]
+fix(api): honour Retry-After before the first retry [AC-API-6]
+chore: bump actions/checkout to v7
+docs: amend ADR-0004 with the key-holder decision
 ```
 
-This keeps history readable and makes automated changelogs possible later.
+A commit that touches application code names the acceptance criteria it
+satisfies, in brackets at the end; `chore:` and `docs:` commits are exempt.
+`CLAUDE.md` rule 3 is the full statement. This keeps history readable and
+lets a reviewer trace any line of the brief to the commit that met it.
 
 ## Merging
 

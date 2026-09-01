@@ -1,0 +1,55 @@
+# BLOCKERS.md — findings that go back to the Architect
+
+> A Builder or QA session that cannot proceed as specified **stops and writes
+> a row here**. It does not decide, and it does not edit a spec file
+> ([`CLAUDE.md`](../CLAUDE.md) §Roles). The Architect resolves the row in a
+> `docs:` commit and records the resolution beside it. Nothing in this file
+> is closed by the session that opened it.
+
+## When to write one
+
+- A task needs to write a file its **File ownership** row does not give it
+  ([`TASKS.md`](TASKS.md)).
+- A frozen contract from T-01 is wrong or missing a case.
+- `TASKS.md` and `ACCEPTANCE.md` disagree, or a criterion cannot be built as
+  written.
+- A dependency the plan does not list is needed (rule 4 — an ADR comes first).
+- QA (T-13) finds a criterion unmet or a test that names an ID and proves
+  nothing.
+
+## Format
+
+One row per finding. `B-NN` is sequential across the project.
+
+| Column | Contents |
+|---|---|
+| ID | `B-NN` |
+| Date | when it was raised |
+| Raised by | task ID and role — `T-07 Builder`, `T-13 QA`, `ARCH-03 Architect` |
+| Finding | what contradicts what, with the file and the line or criterion ID |
+| Resolution | what the Architect changed, or `open` |
+| Commit | the `docs:` commit that resolved it |
+
+Anyone may append a row. `docs/` is outside every task's ownership lane, so
+appending here never fails `/task-close`. The Architect fills in the last two
+columns; a Builder never does.
+
+## Log
+
+| ID | Date | Raised by | Finding | Resolution | Commit |
+|---|---|---|---|---|---|
+| B-01 | 2026-09-01 | ARCH-03 Architect (critic pass) | **No caller could present the key.** ADR-0004 made the Route Handler the key-requiring upstream; ADR-0005 and `AC-API-3` forbid the browser, its only caller, from holding the key. Every request was a `401` by construction. | Two server-side layers: Route Handlers hold the key and call `lib/server/upstream.ts`, which demands it. `AC-API-3..4`, `AM-2`, ADR-0004 (amended section), ADR-0005, T-01 `types/api.ts`, T-06. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-02 | 2026-09-01 | ARCH-03 Architect | **Rule 5 was unsatisfiable.** Rule 5, `AC-TEST-1`, T-11's done-when and DoD #1 required a named Jest test for every criterion; ADR-0006 says `AC-UI-1..4` and `AC-A11Y-4` cannot have one, and `AC-CI-2` and `AC-DEP-1` are a setting and a phone. | New `◉` status, limited by name to those seven criteria, with procedure and date required. `ACCEPTANCE.md` legend, `AC-TEST-1`, `CLAUDE.md` rule 5, `PROJECT.md` DoD #1, T-09, T-10, T-11. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-03 | 2026-09-01 | ARCH-03 Architect | **The wave gate deadlocked on T-14.** `task-start` blocks any wave-5 task until every wave-4 task is closed; T-14 sat at "wave 4–5" and could not close until T-13 (wave 5) had. T-11 would never open. | T-14 moved to wave 5 alongside the T-11 → T-13 chain. Wave 5 is 135m and T-14 is 120m, so wall clock is unchanged. `TASKS.md` Sequence and wave tables, T-14 detail. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-04 | 2026-09-01 | ARCH-03 Architect | **T-10 would fail its own close.** Prose said `components/tasks/**` is shared by T-09 and T-10 in wave 4; the ownership table gave T-10 only `app/(protected)/**`, and `close.py` enforces the table. | `components/tasks/**` (layout classes only) added to T-10's row; merge order stated in the table. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-05 | 2026-09-01 | ARCH-03 Architect | **Squash merge erased the traceability argument.** Rule 3 puts criterion IDs in branch commits; `CONTRIBUTING.md` squash-merges with the PR title as the subject, and nothing required IDs in titles. `main` already showed it (`T-00: wave-aware …`, no prefix, no ID). | PR title carries task ID and criterion IDs: `CLAUDE.md` rule 3, `CONTRIBUTING.md`, `TASKS.md` rule 1, PR template section. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-06 | 2026-09-01 | ARCH-03 Architect | **Criteria assigned to tasks that cannot prove them.** `AC-API-1..2` (a request is sent when I create/delete) on T-06, a server task that renders nothing; the rollback clause of `AC-API-7` and the message clause of `AC-API-12` on T-07, a library task, while both behaviours are T-08's. | `AC-API-1..2` moved to T-08; `AC-API-7` and `AC-API-12` split `(client)` / `(rollback)` and `(message)` the way `AC-API-10` already was. Sequence table, T-06, T-07, T-08. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-07 | 2026-09-01 | ARCH-03 Architect | **Nobody owned the live region.** `AC-FILT-6` (T-05, wave 2), `AC-DEL-2` and `AC-API-11` (T-08, wave 3) and `AC-A11Y-3` (T-09, wave 4) need one announcement mechanism; no path in the ownership table held it. | `components/ui/live-region.tsx` added to T-01's contract table (`components/ui/**` is frozen after wave 0), mounted by T-02, consumed via `useAnnounce()` by T-05, T-08, T-09. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-08 | 2026-09-01 | ARCH-03 Architect | **"Pending" meant two things in the frozen contract.** `SyncState` used `pending` for in-flight; `Filter` uses `pending` for not-completed; `AC-ADD-1` says a new task's "status is Pending". | `SyncState = 'confirmed' \| 'syncing' \| 'failed'`. T-01 `types/task.ts`, ADR-0004, T-08, `AC-ADD-8`, `AC-API-11` wording. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-09 | 2026-09-01 | ARCH-03 Architect | **`AC-API-3` needed a production build no CI step produced.** The bundle test greps `.next/` output; CI ran typecheck, lint and test only, and T-01 owns CI for the life of the project. | CI runs `next build` then `npm run test:bundle`, a separate Jest config that fails rather than skips when `.next/` is absent. `AC-CI-1`, T-01, DoD #2; `close.py` change scheduled in T-16. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-10 | 2026-09-01 | ARCH-03 Architect | **MSW handlers were frozen but T-07 needed them scriptable.** T-07 must drive repeated `429`s with chosen `Retry-After` values without editing `test/msw/handlers.ts`, a T-01 contract. | T-01 exports handler factories (`handlersFor(script)`) alongside the defaults; T-07 and T-08 compose via `server.use(...)`. T-01 contract table. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-11 | 2026-09-01 | ARCH-03 Architect | **Three documents disagreed on approvals.** `CONTRIBUTING.md` required one approving review; `REPO-PROTECTIONS.md` sets it to zero for a solo maintainer; `TASKS.md` then named the review queue as a likely critical path. | `CONTRIBUTING.md` states the solo rule and when it changes; `TASKS.md` failure mode rewritten as the honest risk (rubber-stamping three diffs at once). | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-12 | 2026-09-01 | ARCH-03 Architect | **"Write a blocker" appeared throughout with no file, format or owner.** QA findings were to "go back as tasks", but QA cannot edit `TASKS.md`. | This file. Referenced from `CLAUDE.md`, `TASKS.md` rule 4, T-13. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-13 | 2026-09-01 | ARCH-03 Architect | **T-08's stated risk was moot and its real one unstated.** "Restoring a deleted task to its original index" is automatic under `AC-LIST-3`'s derived ordering. The real reconciliation risk is `AC-API-8`: a server-assigned `id` or `createdAt` would reorder or remount the row. | Contract: client assigns `id` and `createdAt`, server echoes both; persisted envelope omits `sync`. T-01 `types/task.ts`, `types/api.ts`, `schema.ts`; T-08 detail; notes on `AC-API-8..9`. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-14 | 2026-09-01 | ARCH-03 Architect | **Wave 5 is a chain the gate does not see.** `task-start` treats same-wave tasks as concurrent, so T-12 could open before T-11 closed. | `TASKS.md` rule 2 states that `Depends on` holds inside a wave; the script change is scheduled in T-16. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
+| B-15 | 2026-09-01 | ARCH-03 Architect | **Stale numbers across documents.** `PROJECT.md` said 16.5 hours, five ADRs and "the first four tasks"; `TASKS.md` said 17.5 hours and 16h45m; the table summed to 18h. `README.md` said the stack was not chosen. DoD #5 required the ledger to reconcile while `LEDGER.md` states `SETUP-01` never will. | All restated from the Sequence table as the single source; README rewritten; DoD #5 names the exception. A lint for this is T-16. | `docs: ARCH-03 spec amendments from the pre-wave critic pass` |
