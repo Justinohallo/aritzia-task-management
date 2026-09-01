@@ -16,6 +16,7 @@ Checks, in order. Any FAIL stops the run before the ledger is touched:
   3. every claimed criterion has a test naming it   (rule 5, reported not enforced)
   4. every commit touching application code names a criterion   (rule 3)
   5. every new runtime dependency has an ADR on the branch      (rule 4)
+  6. every file written is one this task owns  (TASKS.md, File ownership)
 
 Stdlib only, to match scripts/ledger.py and scripts/task.sh.
 """
@@ -27,6 +28,7 @@ import subprocess
 import sys
 
 LEDGER_REL = "docs/LEDGER.md"
+TASKS_REL = "docs/TASKS.md"
 LEDGER_TABLE_MARKER = "| date | session_id |"
 BASE_REFS = ("main", "origin/main")
 
@@ -216,6 +218,137 @@ def check_dependencies(root, base, report):
 
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# File ownership (TASKS.md) - one writer per path, per wave
+# ---------------------------------------------------------------------------
+
+BACKTICKED_RE = re.compile(r"`([^`]+)`")
+
+
+def ownership_table(root):
+    """{task_id: {'writes': [pattern], 'reads': [pattern]}} from TASKS.md.
+
+    Returns None when the plan has no File ownership table, so an older plan
+    degrades to a printed skip rather than a false accusation.
+    """
+    path = os.path.join(root, TASKS_REL)
+    if not os.path.exists(path):
+        return None
+    lines = open(path, encoding="utf-8").read().split("\n")
+    header_i = next((i for i, l in enumerate(lines)
+                     if l.startswith("| Task") and "Writes" in l), None)
+    if header_i is None:
+        return None
+    columns = [c.strip() for c in lines[header_i].strip().strip("|").split("|")]
+    reads_col = next((c for c in columns if c.startswith("Reads")), None)
+
+    table = {}
+    for line in lines[header_i + 2:]:
+        if not line.startswith("|"):
+            break
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) != len(columns):
+            continue
+        row = dict(zip(columns, cells))
+        tid = row["Task"].replace("*", "").strip()
+        writes = row.get("Writes", "")
+        table[tid] = {
+            # "everything" is T-01's cell; it owns the repo for the life of wave 0.
+            "all": "everything" in writes.lower(),
+            "writes": BACKTICKED_RE.findall(writes),
+            "reads": BACKTICKED_RE.findall(row.get(reads_col, "") if reads_col else ""),
+        }
+    return table or None
+
+
+def pattern_to_re(pattern):
+    """A TASKS.md path glob as a regex. '**' crosses separators, '*' does not."""
+    out, i = [], 0
+    while i < len(pattern):
+        if pattern.startswith("**", i):
+            out.append(".*")
+            i += 2
+        elif pattern[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        else:
+            out.append(re.escape(pattern[i]))
+            i += 1
+    body = "".join(out).rstrip("/")
+    # A bare directory or a stem such as `jest.config` owns what sits under it.
+    alts = [r"%s(/.*)?" % body, r"%s\..*" % body]
+    # TASKS.md abbreviates a run of siblings to bare filenames - T-05's cell is
+    # "components/tasks/task-list.tsx, task-item.tsx, task-filters.tsx". Match a
+    # wildcard-free basename anywhere, or that shorthand reads as a violation.
+    if "/" not in pattern and "*" not in pattern:
+        alts.append(r"(.*/)?%s" % body)
+    return re.compile("^(?:%s)$" % "|".join(alts))
+
+
+def check_ownership(root, base, task_id, report):
+    """(6) One writer per path, per wave. This is what lets three PRs merge."""
+    table = ownership_table(root)
+    if table is None:
+        report("SKIP", "ownership", "%s has no File ownership table" % TASKS_REL)
+        return []
+    lane = table.get(task_id)
+    if lane is None:
+        report("FAIL", "ownership", "%s has no File ownership row in %s"
+               % (task_id, TASKS_REL))
+        return ["%s has no row in the File ownership table of %s. Ask the "
+                "Architect for one before three branches collide."
+                % (task_id, TASKS_REL)]
+    if lane["all"]:
+        report("PASS", "ownership", "%s owns everything for this wave" % task_id)
+        return []
+
+    changed = [p for p in run(["git", "diff", "--name-only", base], root,
+                              check=True).stdout.split("\n") if p.strip()]
+    owned = [pattern_to_re(x) for x in lane["writes"]]
+    read_only = {x: pattern_to_re(x) for x in lane["reads"]}
+
+    strays, frozen = [], []
+    for path in changed:
+        # Spec, tooling, CI and tests are not contended: every task writes tests
+        # (rule 5) and appends its own ledger row.
+        if not is_app_source(path) or TEST_FILE_RE.search(path):
+            continue
+        if any(r.match(path) for r in owned):
+            continue
+        hit = next((x for x, r in read_only.items() if r.match(path)), None)
+        (frozen if hit else strays).append((path, hit))
+
+    if not strays and not frozen:
+        report("PASS", "ownership", "%d changed file(s), all within this task's lane"
+               % len(changed))
+        return []
+
+    report("FAIL", "ownership", "%d file(s) written outside this task's lane"
+           % (len(strays) + len(frozen)))
+    for path, hit in frozen:
+        print("    %s  — listed under Reads (never writes) as %s" % (path, hit))
+    for path, _ in strays:
+        print("    %s  — owned by no pattern in this task's Writes cell" % path)
+    print("    this task writes: %s" % (", ".join(lane["writes"]) or "—"))
+
+    problems = []
+    if frozen:
+        problems.append(
+            "%s edits %s, which %s reads and does not write. A contract an agent "
+            "edits mid-wave silently breaks every other agent in the wave and "
+            "surfaces two waves later in someone else's tests. Stop and write a "
+            "blocker for the Architect (CLAUDE.md, Roles)."
+            % (task_id, ", ".join(p for p, _ in frozen), task_id))
+    if strays:
+        problems.append(
+            "%s writes %s, which the File ownership table in %s does not give it. "
+            "One writer per path per wave is what makes concurrent pull requests "
+            "merge. Either the file belongs to another task, or the table has a "
+            "gap - both are the Architect's to resolve."
+            % (task_id, ", ".join(p for p, _ in strays), TASKS_REL))
+    return problems
+
+
 def latest_ledger_task(root):
     """task_id on the row `ledger.py --annotate latest` would write to."""
     path = os.path.join(root, LEDGER_REL)
@@ -278,6 +411,7 @@ def main(argv):
     print("")
     failures += check_commits(root, base, report_line)
     failures += check_dependencies(root, base, report_line)
+    failures += check_ownership(root, base, task_id, report_line)
 
     if failures:
         raise CloseError(

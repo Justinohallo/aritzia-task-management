@@ -10,8 +10,14 @@ found it:
 
   1. no other task is already claimed (CLAUDE.md rule 2)
   2. the task exists in docs/TASKS.md
-  3. every dependency has a closed row in docs/LEDGER.md
+  3. every task in every earlier wave has a closed row in docs/LEDGER.md
   4. every criterion the task names exists in docs/ACCEPTANCE.md
+
+The wave gate is deliberately wider than the task's own "Depends on" cell.
+TASKS.md rule 2 for concurrent agents is that a wave does not start until the
+previous wave is merged and main is green; with three agents running at once,
+a per-task dependency check would let an agent start against a half-built
+wave and not notice until two waves later.
 
 Stdlib only, to match scripts/ledger.py and scripts/task.sh.
 """
@@ -24,10 +30,6 @@ TASKS_REL = "docs/TASKS.md"
 ACCEPTANCE_REL = "docs/ACCEPTANCE.md"
 LEDGER_REL = "docs/LEDGER.md"
 LEDGER_TABLE_MARKER = "| date | session_id |"
-
-# TASKS.md notes that T-02 and T-03 share only the scaffold and may run
-# concurrently. Any other dependency edge is a hard gate.
-PARALLEL_PAIRS = {frozenset(("T-02", "T-03"))}
 
 TASK_ID_RE = re.compile(r"\bT-\d+\b")
 CRITERION_RE = re.compile(r"\bAC-([A-Z0-9]+)-(\d+)(?:\.\.(\d+))?\b")
@@ -69,18 +71,53 @@ def normalise_task_id(raw):
 # TASKS.md
 # ---------------------------------------------------------------------------
 
-def sequence_row(tasks_md, task_id):
-    """The task's row in the Sequence table, as a list of cells."""
-    for line in tasks_md.split("\n"):
+def sequence_table(tasks_md):
+    """Every row of the Sequence table, keyed by column header.
+
+    Columns are read by name, never by position. The table has grown a column
+    before (Wave, between Est. and Depends on) and positional access failed
+    open: the dependency gate silently found no dependencies and let every
+    task start.
+    """
+    lines = tasks_md.split("\n")
+    header_i = next(
+        (i for i, l in enumerate(lines)
+         if l.startswith("| #") and "Task" in l and "Depends on" in l),
+        None,
+    )
+    if header_i is None:
+        raise StartError(
+            "no Sequence table in %s: expected a header row containing '#', "
+            "'Task' and 'Depends on'." % TASKS_REL
+        )
+    columns = [c.strip() for c in lines[header_i].strip().strip("|").split("|")]
+
+    rows = {}
+    for line in lines[header_i + 2:]:
         if not line.startswith("|"):
-            continue
+            break
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if not cells:
+        if len(cells) != len(columns):
             continue
-        first = cells[0].replace("*", "").strip()
-        if first == task_id:
-            return cells
-    return None
+        row = dict(zip(columns, cells))
+        tid = row["#"].replace("*", "").strip()
+        if re.fullmatch(r"[A-Z]+-\d+", tid):
+            rows[tid] = row
+    if not rows:
+        raise StartError("the Sequence table in %s has no task rows" % TASKS_REL)
+    return rows
+
+
+def wave_of(row):
+    """The Wave cell as a sortable number, or None if the plan has no waves.
+
+    '4-5' (a task spanning two waves) sorts as the wave it starts in.
+    """
+    cell = row.get("Wave")
+    if cell is None:
+        return None
+    m = re.search(r"\d+", cell.replace("*", ""))
+    return int(m.group(0)) if m else None
 
 
 def detail_section(tasks_md, task_id):
@@ -136,11 +173,32 @@ def expand_criteria(cell):
     return out
 
 
-def dependencies(cells):
+def dependencies(row):
     """Task ids in the 'Depends on' cell of a sequence row."""
-    if len(cells) < 5:
-        return []
-    return TASK_ID_RE.findall(cells[4])
+    return TASK_ID_RE.findall(row.get("Depends on", ""))
+
+
+def ownership_row(tasks_md, task_id):
+    """The task's row in the File ownership table, or None if there is no table."""
+    lines = tasks_md.split("\n")
+    header_i = next(
+        (i for i, l in enumerate(lines)
+         if l.startswith("| Task") and "Writes" in l),
+        None,
+    )
+    if header_i is None:
+        return None
+    columns = [c.strip() for c in lines[header_i].strip().strip("|").split("|")]
+    for line in lines[header_i + 2:]:
+        if not line.startswith("|"):
+            break
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) != len(columns):
+            continue
+        row = dict(zip(columns, cells))
+        if row["Task"].replace("*", "").strip() == task_id:
+            return row
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -208,6 +266,14 @@ def closed_tasks(ledger_md):
 
 # ---------------------------------------------------------------------------
 
+def branch_hint(task_id, name):
+    """feat/t-05-list, per TASKS.md rule 1 for concurrent agents."""
+    slug = re.sub(r"[^a-z0-9]+", "-", re.sub(r"[`*]", "", name).lower()).strip("-")
+    first = slug.split("-")[0] if slug else "task"
+    kind = "chore" if "tooling" in name.lower() or task_id == "T-00" else "feat"
+    return "%s/%s-%s" % (kind, task_id.lower(), first)
+
+
 def main(argv):
     if not argv or argv[0] in ("-h", "--help"):
         print(__doc__)
@@ -240,12 +306,13 @@ def main(argv):
     ledger_md = read(os.path.join(root, LEDGER_REL))
 
     # (c) the task must exist, in both the table and the detail section.
-    cells = sequence_row(tasks_md, task_id)
-    if cells is None:
+    rows = sequence_table(tasks_md)
+    if task_id not in rows:
         raise StartError(
             "%s is not in the Sequence table of %s. If it is a new task, the "
             "Architect adds it there first." % (task_id, TASKS_REL)
         )
+    row = rows[task_id]
     section = detail_section(tasks_md, task_id)
     if section is None:
         raise StartError(
@@ -254,24 +321,46 @@ def main(argv):
             % (task_id, TASKS_REL)
         )
 
-    name = cells[1] if len(cells) > 1 else task_id
-    criteria_cell = cells[2] if len(cells) > 2 else ""
-    estimate = cells[3] if len(cells) > 3 else "-"
-    deps = dependencies(cells)
+    name = row.get("Task", task_id)
+    criteria_cell = row.get("Criteria", "")
+    estimate = row.get("Est.", "-")
+    wave = wave_of(row)
+    deps = dependencies(row)
 
-    # (d) dependency gate.
+    # (d) the gate. With waves, the unit is the wave: every task in an earlier
+    # wave must be closed, not merely the ones this task happens to name.
     closed = closed_tasks(ledger_md)
-    dep_status, blocked = [], []
-    for dep in deps:
-        if frozenset((task_id, dep)) in PARALLEL_PAIRS:
-            dep_status.append("%s  parallel (may run concurrently)" % dep)
-        elif dep in closed:
-            dep_status.append("%s  closed (qa: %s)" % (dep, closed[dep]))
-        else:
-            dep_status.append("%s  NOT CLOSED" % dep)
-            blocked.append(dep)
+    dep_status = [
+        "%s  %s" % (d, "closed (qa: %s)" % closed[d] if d in closed else "NOT CLOSED")
+        for d in deps
+    ] or ["—"]
+
+    concurrent, blocked = [], []
+    if wave is None:
+        blocked = [d for d in deps if d not in closed]
+        gate = "dependency"
+    else:
+        gate = "wave"
+        for tid, other in rows.items():
+            if tid == task_id:
+                continue
+            w = wave_of(other)
+            if w is None:
+                continue
+            if w < wave and tid not in closed:
+                blocked.append(tid)
+            elif w == wave:
+                concurrent.append(tid)
+        blocked.sort()
+        concurrent.sort()
     if blocked:
         raise StartError(
+            "%s is in wave %s, and %s %s not closed in %s (no row whose qa_result "
+            "is set).\nA wave does not start until the previous wave is merged and main is green (TASKS.md,\nRules for concurrent agents #2) - otherwise agents in this wave build against\ndifferent versions of the same contract.\nClose them first, or have the Architect move "
+            "%s in %s."
+            % (task_id, wave if wave is not None else "?", ", ".join(blocked),
+               "is" if len(blocked) == 1 else "are", LEDGER_REL, task_id, TASKS_REL)
+            if gate == "wave" else
             "%s depends on %s, which has no closed row in %s (a row whose "
             "qa_result is not '-').\nFinish and close the dependency first, or "
             "have the Architect change the order in %s."
@@ -330,7 +419,14 @@ def main(argv):
     w("=" * 72 + "\n\n")
     w("  estimate    %s\n" % estimate)
     w("  criteria    %d (%s)\n" % (len(criteria), criteria_cell or "—"))
-    w("  depends on  %s\n" % ("; ".join(dep_status) if dep_status else "—"))
+    w("  depends on  %s\n" % "; ".join(dep_status))
+    if wave is not None:
+        w("  wave        %s%s\n" % (
+            wave,
+            "  — running concurrently with %s" % ", ".join(concurrent)
+            if concurrent else "  — solo"))
+        w("  branch      %s  (off the latest main, never off another agent)\n"
+          % branch_hint(task_id, name))
     if supplied_criteria_arg:
         w("  claimed as  %s\n" % supplied_criteria_arg)
         if outside:
@@ -341,6 +437,20 @@ def main(argv):
     dw = done_when(section)
     w("  DONE WHEN\n")
     w("  %s\n\n" % (dw or "not stated in %s — the task has no exit condition." % TASKS_REL))
+
+    own = ownership_row(tasks_md, task_id)
+    if own is not None:
+        w("  FILES THIS TASK OWNS (one writer per path, per wave)\n")
+        w("  writes  %s\n" % (own.get("Writes") or "—"))
+        reads = own.get("Reads (never writes)") or own.get("Reads") or "—"
+        w("  reads   %s\n" % reads)
+        w("  Writing a file this task does not own is a spec gap, not a\n")
+        w("  judgement call: stop and write a blocker. /task-close checks this.\n\n")
+    elif wave is not None:
+        w("  FILES THIS TASK OWNS\n")
+        w("  no File ownership row for %s in %s — ask the Architect for one\n"
+          % (task_id, TASKS_REL))
+        w("  before writing, or three concurrent branches will collide.\n\n")
 
     w("  ADRs TO READ IN FULL BEFORE WRITING ANYTHING\n")
     if adrs:
