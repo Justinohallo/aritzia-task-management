@@ -156,6 +156,12 @@ state, not repository content.
 `main` is protected. All work lands through a pull request from a branch. See
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+Sessions run on Claude Code on the web, one per task. The human side of that —
+starting, steering, closing, and merging sessions — is
+[`docs/OPERATOR.md`](docs/OPERATOR.md). A `SessionStart` hook fetches
+`origin/main` and reports whether a task is claimed; if it says none is, run
+`/task-start` before anything else.
+
 This is a **public** repository. Never commit secrets — see
 [`SECURITY.md`](SECURITY.md). The API key this application uses is server-side
 only and is asserted absent from the client bundle by a test (`AC-API-3`).

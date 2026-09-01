@@ -20,6 +20,10 @@ checklist for the settings half. It has not been done yet.**
 `main` is protected. All work lands through a pull request from a branch.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+The build is run by Claude Code cloud sessions, one per task. The operator's
+runbook — how to start, steer, close, and merge them — is
+[`docs/OPERATOR.md`](docs/OPERATOR.md).
+
 ## Security
 
 This is a **public** repository. Never commit secrets — see
