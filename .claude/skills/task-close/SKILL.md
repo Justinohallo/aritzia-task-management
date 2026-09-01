@@ -45,7 +45,7 @@ line to use — the row belongs with the work it measures.
 | # | Rule | Behaviour |
 |---|---|---|
 | 1 | rule 1 — no code without a task ID | Fails if nothing is claimed. |
-| 2 | the repo's own gates | `npm run typecheck`, `lint`, `test`. Prints `no package.json — skipping` before the scaffold exists; fails on any non-zero exit after it. |
+| 2 | the repo's own gates | `npm run typecheck`, `lint`, `test`, then `build` and `test:bundle`, in that order. Prints `no package.json — skipping` before the scaffold exists; fails on any non-zero exit after it. The last two are there so the `AC-API-3` bundle search runs against a real production build at every close, not only in CI (`B-09`). |
 | 3 | rule 5 — a criterion is not met until a test names it | Greps the test files for each claimed ID and prints `met` with `file:line` or `part`. **Reports, does not fail** — `◐` implemented-but-untested is an honest state, and a check that forced it to be `☑` would only teach people to write a test that names an ID and asserts nothing. |
 | 4 | rule 3 — every commit references a criterion | Every commit on the branch that touches application code must carry `[AC-...]` in its subject. `docs/`, `.github/`, `.claude/`, `scripts/`, and root-level config and markdown are not application code. |
 | 5 | rule 4 — an ADR before any new dependency | Diffs `dependencies` (not `devDependencies`) against `main`. A new one requires a changed file under `docs/adr/` on the branch. |
@@ -75,7 +75,7 @@ than no row.
 | `added with no ADR touched on this branch` | Rule 4 — the ADR comes first, with its build-vs-buy section. Write it, or drop the dependency. |
 | `the last row in docs/LEDGER.md is X, not Y` | `--annotate latest` writes to the last row, and it is not this task's. Let the `Stop` hook write this session's row and retry, or annotate by session id with `scripts/ledger.py --annotate <session-id>`. |
 | `written outside this task's lane` | Do not widen the lane to make it pass. Either revert the file, or write a blocker — `TASKS.md` is explicit that a task needing to write a file it does not own has found a spec gap. |
-| `no File ownership row` | The plan does not assign this task any files. Ask the Architect for a row before three branches collide. |
+| `no File ownership row … and wrote N application file(s)` | The plan gives this task no lane because it was not meant to write application code (T-12, T-13, T-15), and it did. Ask the Architect for a row before three branches collide. A lane-less task that touched only spec, tooling, CI and tests passes. |
 | `annotation is partial` | All three of `--interventions`, `--tests-added`, `--qa-result` are required together. A half-filled row invites a reader to assume the blanks are zeroes. |
 
 ## Under concurrency
