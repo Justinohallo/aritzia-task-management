@@ -52,16 +52,88 @@ per-response `usage` objects, not from an estimate.
   hand. Nothing in the transcript reports them reliably, so the script does not
   invent them.
 
+## The capture mechanism
+
+**Which hooks exist, and which are used.** `.claude/settings.json` registers
+`scripts/ledger.py` on two events:
+
+| Event | Why it is registered |
+|---|---|
+| `Stop` | Fires when the model finishes a turn. Gives a live row that is correct even if the session is later killed rather than closed. |
+| `SessionEnd` | Fires on clean session close. The authoritative final write. |
+
+`SubagentStop` is deliberately **not** registered, and that is a known gap
+rather than an oversight — see "What this ledger cannot measure" below.
+
+**The hook reads the transcript, not `/cost`.** The original intent was to
+capture `/cost` output. That is the wrong source and was rejected:
+
+- `/cost` is an interactive slash command. Its rendered output is not available
+  to a hook process, which receives a JSON payload on stdin, not the terminal.
+- The transcript's per-response `usage` objects are the same data one level
+  closer to the source — per response, per model, with the cache-write TTL
+  split that a single summary figure flattens away.
+- A transcript can be re-derived at any time
+  (`--transcript <path> --breakdown`). A scraped summary cannot be audited
+  after the fact.
+
+The one thing `/cost` had that this does not is Anthropic's own arithmetic. That
+is replaced by `--selfcheck`, which prints this repo's arithmetic in full so it
+can be checked line by line — and which currently reports, loudly, that the
+backfilled `SETUP-01` row does **not** reconcile. Leaving that visible is the
+point: a ledger that quietly adjusted its rates to make a number match would be
+worthless as evidence.
+
+## Filling the human columns
+
+Four columns cannot be derived from a transcript and are set by hand:
+
+```bash
+python3 scripts/ledger.py --annotate latest \
+  --criteria-ids "AC-ADD-1,AC-ADD-2,AC-API-8" \
+  --interventions 7/3/1 \
+  --tests-added 12 \
+  --qa-result pass
+```
+
+`--annotate latest` targets the last row; a session id targets that row.
+Attempting to annotate a **measured** column is refused — token counts and
+costs are not hand-editable, because a ledger whose numbers can be typed over
+is not evidence of anything.
+
+`upsert` preserves hand-supplied cells when the hook rewrites a row. Without
+that, every annotation would be destroyed the next time the model stopped
+talking.
+
+### What `interventions` counts
+
+`accepted / edited / rejected`, counted against **proposals the agent made**,
+not messages exchanged:
+
+- **accepted** — a proposal taken as-is: a recommendation adopted, a diff
+  merged without change.
+- **edited** — taken, but modified: the direction was right, the specifics
+  were not.
+- **rejected** — discarded, reversed, or abandoned, including a question the
+  human declined to answer and a scope proposal that was overruled.
+
+The ratio is the number worth watching over time. Rising `rejected` on a task
+type means the specification is not carrying enough information — which is a
+spec problem to fix upstream, not a model problem to work around.
+
 ## Ledger
 
 | date | session_id | task_id | criteria_ids | wall_clock_min | api_time_min | leverage_ratio | input_tokens | output_tokens | cache_write_tokens | cache_read_tokens | api_cost_usd | models (% of cost) | interventions (accepted/edited/rejected) | tests_added | qa_result | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-08-31 | unrecorded (pre-hook) | SETUP-01 | - | 10.0 | 4.0 | 0.40 | 208 | 587 | 885,800 | 9,700,000 | 3.02 | unverified (no transcript) | - | - | - | backfilled from /cost; repo init, branch protection. Cost is as /cost reported it; it does not reconcile with Opus 5 list pricing for these counts (see `--selfcheck`). |
 | 2026-08-31 | 89cb008a-f78d-5c8f-bef3-e68cab039af7 | LEDGER-01 | - | 12.2 | 8.2 | 0.67 | 52 | 40,045 | 205,310 | 2,704,523 | 4.41 | claude-opus-5 100% | - | - | - | ledger system build + per-model breakdown; row written by the hook itself |
-| 2026-09-01 | b4369396-4840-5623-8c6e-80a7449e6f70 | INTAKE-01 | - | 20.6 | 4.9 | 0.24 | 28 | 19,007 | 154,095 | 987,490 | 2.51 | claude-opus-5 100% | - | - | - | - |
+| 2026-09-01 | b4369396-4840-5623-8c6e-80a7449e6f70 | INTAKE-01 | authored AC-ADD/LIST/FILT/DONE/DEL/API/AUTH/NAV/STATE/UI/A11Y/QUAL/TEST/CI/DEP (78); none implemented | 20.9 | 5.1 | 0.24 | 34 | 19,600 | 156,268 | 1,267,995 | 2.69 | claude-opus-5 100% | 4/1/2 | 0 | n/a (spec only) | intake + acceptance + ADRs + ledger + operating rules + task plan; no application code |
 
 ## What this ledger cannot measure
 
+- **Human review time.** Wall-clock covers the session, not the minutes spent
+  reading a diff afterwards. A row showing a cheap session that then consumed
+  an hour of review is not a cheap session, and this table cannot tell you that.
 - **Subagent (`Task` tool) usage.** Subagent transcripts are written to separate
   files referenced by the `SubagentStop` hook's `agent_transcript_path`. Usage
   recorded only in those files is not counted in the parent session's row. Rows
