@@ -14,9 +14,9 @@ per-response `usage` objects, not from an estimate.
   `PRICES_USD_PER_MTOK` in `scripts/ledger.py` — audit them there.
 - **Cache reads are reported separately on purpose.** In agentic sessions they
   dominate the raw token count — often by 10:1 or more — while costing 0.1× the
-  base input rate. Quoting a single "total tokens" number makes a session look
-  an order of magnitude larger than its economics. Read the four token columns
-  as four different things, not as addends.
+  base input rate (0.025× on Claude Fable 5.1). Quoting a single "total tokens"
+  number makes a session look an order of magnitude larger than its economics.
+  Read the four token columns as four different things, not as addends.
 - **Cache writes are priced by TTL.** A 5-minute cache write costs 1.25× base
   input; a 1-hour write costs 2×. The script reads the per-response TTL split
   and prices each accordingly.
@@ -129,6 +129,7 @@ spec problem to fix upstream, not a model problem to work around.
 | 2026-08-31 | 89cb008a-f78d-5c8f-bef3-e68cab039af7 | LEDGER-01 | - | 12.2 | 8.2 | 0.67 | 52 | 40,045 | 205,310 | 2,704,523 | 4.41 | claude-opus-5 100% | - | - | - | ledger system build + per-model breakdown; row written by the hook itself |
 | 2026-09-01 | b4369396-4840-5623-8c6e-80a7449e6f70 | ARCH-01 | authored AC-ADD/LIST/FILT/DONE/DEL/API/AUTH/NAV/STATE/UI/A11Y/QUAL/TEST/CI/DEP (78); none implemented | 59.5 | 21.5 | 0.36 | 103 | 89,072 | 479,078 | 5,945,338 | 9.99 | claude-opus-5 100% | 6/1/2 | 0 | n/a (spec only) | intake + acceptance + ADRs + ledger + operating rules + task plan; no application code |
 | 2026-09-01 | 1e07e9b8-88dc-5b13-9389-f24f23a631bf | ARCH-02 | - | 11.7 | 5.6 | 0.48 | 53 | 24,988 | 107,160 | 2,623,997 | 3.01 | claude-opus-5 100% | - | - | n/a (spec only) | Architect: re-planned TASKS.md as six concurrent-agent waves; contract freeze at T-01, T-06 and T-14 taken off the critical path; file-ownership map and merge rules added. No application code. |
+| 2026-09-01 | c6e5e0b7-6bb2-5887-9e12-5278ba684c17 | LEDGER-02 | - | 12.8 | 6.0 | 0.47 | 3,811 | 19,954 | 153,009 | 9,053,141 | 6.36 | claude-fable-5-1 100% | - | - | n/a | add claude-fable-5-1 to the price table (cache read 0.025x); tooling only, no application code |
 
 ## What this ledger cannot measure
 
