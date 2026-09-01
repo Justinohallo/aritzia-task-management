@@ -89,9 +89,9 @@ You are the Builder for T-NN. Read CLAUDE.md first.
 3. Commit as you go with Conventional Commits and the criterion IDs in
    brackets. Push after every commit.
 4. If the spec is ambiguous, contradictory, or would require writing a file
-   this task does not own, stop and tell me — that is a blocker for the
-   Architect. Do not edit any file under docs/ and do not change the spec to
-   match what you built.
+   this task does not own, stop: append a row to docs/BLOCKERS.md, push, and
+   tell me — that is a blocker for the Architect. Do not edit any other file
+   under docs/ and do not change the spec to match what you built.
 5. When the task's "Done when" line holds, report what you built, what you
    tested, and anything you were unsure about. Do not run /task-close yet.
 ```
@@ -106,10 +106,10 @@ session from `main`:
 
 ```
 You are the Architect. Read CLAUDE.md. Do not write application code.
-Here is a blocker from the T-NN Builder: <paste the session's message>.
-Resolve it by amending the spec (docs/PROJECT.md, docs/ACCEPTANCE.md,
-docs/adr/, docs/TASKS.md) in its own docs: commit, push, and tell me what
-changed and which open sessions need to rebase.
+Resolve blocker B-NN in docs/BLOCKERS.md (raised by the T-NN Builder).
+Amend the spec (docs/PROJECT.md, docs/ACCEPTANCE.md, docs/adr/, docs/TASKS.md)
+in its own docs: commit, fill in the row's Resolution and Commit columns,
+push, and tell me what changed and which open sessions need to rebase.
 ```
 
 Set the task before it starts: `scripts/task.sh ARCH-NN` (the skill is
