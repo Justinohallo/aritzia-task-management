@@ -129,7 +129,7 @@ spec problem to fix upstream, not a model problem to work around.
 | 2026-08-31 | 89cb008a-f78d-5c8f-bef3-e68cab039af7 | LEDGER-01 | - | 12.2 | 8.2 | 0.67 | 52 | 40,045 | 205,310 | 2,704,523 | 4.41 | claude-opus-5 100% | - | - | - | ledger system build + per-model breakdown; row written by the hook itself |
 | 2026-09-01 | b4369396-4840-5623-8c6e-80a7449e6f70 | ARCH-01 | authored AC-ADD/LIST/FILT/DONE/DEL/API/AUTH/NAV/STATE/UI/A11Y/QUAL/TEST/CI/DEP (78); none implemented | 59.5 | 21.5 | 0.36 | 103 | 89,072 | 479,078 | 5,945,338 | 9.99 | claude-opus-5 100% | 6/1/2 | 0 | n/a (spec only) | intake + acceptance + ADRs + ledger + operating rules + task plan; no application code |
 | 2026-09-01 | 1e07e9b8-88dc-5b13-9389-f24f23a631bf | ARCH-02 | - | 11.7 | 5.6 | 0.48 | 53 | 24,988 | 107,160 | 2,623,997 | 3.01 | claude-opus-5 100% | - | - | n/a (spec only) | Architect: re-planned TASKS.md as six concurrent-agent waves; contract freeze at T-01, T-06 and T-14 taken off the critical path; file-ownership map and merge rules added. No application code. |
-| 2026-09-01 | c6e5e0b7-6bb2-5887-9e12-5278ba684c17 | LEDGER-02 | - | 4.7 | 1.7 | 0.37 | 700 | 5,697 | 111,451 | 1,419,821 | 2.88 | claude-fable-5-1 100% | - | - | n/a | add claude-fable-5-1 to the price table (cache read 0.025x); tooling only, no application code |
+| 2026-09-01 | c6e5e0b7-6bb2-5887-9e12-5278ba684c17 | LEDGER-02 | - | 6.2 | 2.0 | 0.31 | 942 | 6,708 | 113,094 | 1,782,029 | 3.05 | claude-fable-5-1 100% | - | - | n/a | add claude-fable-5-1 to the price table (cache read 0.025x); tooling only, no application code |
 
 ## What this ledger cannot measure
 
