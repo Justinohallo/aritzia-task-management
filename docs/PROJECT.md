@@ -1,7 +1,7 @@
 # PROJECT.md — Aritzia Task Management
 
 > **Status:** specification complete, build not started.
-> **Written:** 2026-09-01 · **Due:** 2026-09-02 17:00 PT `[ASSUMED — see A-1]`
+> **Written:** 2026-09-01 · **Due:** 2026-09-02 17:00 PT (confirmed)
 > **Source of truth for:** `docs/ACCEPTANCE.md`, `docs/adr/`, `docs/TASKS.md`
 
 This is a technical case assessment for a Senior Developer role at Aritzia.
@@ -106,8 +106,9 @@ it is not deleted, and it is not hidden.
 
 ## 7. Appetite and phasing
 
-**Appetite: ~48 hours wall clock, of which an unknown fraction is available.**
-Plan assumes roughly one and a half working days of real capacity.
+**Appetite: ~48 hours wall clock to Wednesday 17:00 PT.** The stakeholder has
+confirmed capacity to complete P1 in that window; the plan is sized at ~16.5
+focused hours (`TASKS.md`).
 
 | Phase | Contents | Status |
 |---|---|---|
@@ -138,20 +139,19 @@ They are recorded so they can be challenged rather than discovered.
 
 | ID | Assumption | Basis | If wrong |
 |---|---|---|---|
-| **A-1** | The deadline is **Wednesday 2026-09-02, 17:00 PT**. | Stakeholder said "Wednesday September at 5PM" without a date; the nearest Wednesday is the 2nd. | If it is the 9th, P1 lands a week early and P2 executes in full. Planning to the nearer date is the safe error. |
+| **A-1** | ~~The deadline is Wednesday 2026-09-02, 17:00 PT.~~ **Confirmed 2026-09-01** — no longer an assumption. | Stakeholder confirmed the date directly. | — |
 | **A-2** | **"Use pages for the log in form and user list"** means two distinct routes, not the Next.js Pages Router. | Distinct routes satisfy the phrase under either reading. App Router chosen deliberately — see [ADR-0001](adr/0001-app-router.md). | Low impact. Both routes exist either way; only the file layout differs. |
 | **A-3** | **"user list"** means the signed-in user's task list, not a list of user accounts. | Every other bullet in the brief concerns tasks. No user-management requirement appears anywhere. | Would imply a user-admin surface. Explicitly cut — see §4. |
 | **A-4** | **"Consider potential rate-limiting scenarios"** is satisfied by implementing 429 handling with backoff, not merely documenting a strategy. | "Consider" is weaker than "implement." Depth chosen because it is the strongest eCommerce analogue available. | Over-delivery, not under-delivery. Recorded in [ADR-0004](adr/0004-api-simulation.md) as a judgment call, not a requirement. |
 | **A-5** | **Deterministic failure injection** is in scope for the API simulation. | Not in the brief. The brief's Jest + RTL requirement makes it necessary: a simulation that fails on `Math.random()` cannot be tested without flakes. | Fall back to a simpler injectable mock. Something must make the failure path deterministic. |
 | **A-6** | The **presentation is a tracked, ledgered task**, ending in a deploy freeze and dry-run. | Stakeholder confirmed. | — |
-| **A-7** | Submission is a **public repo link plus a live deployed URL**. | Stakeholder confirmed. | If repo-only, the Vercel task drops and half a day returns to P2. |
+| **A-7** | Submission is a **public repo link plus a live deployed URL**. | Stakeholder confirmed. Vercel access confirmed 2026-09-01; the project is connected by the stakeholder immediately after T-01. | If repo-only, the Vercel task drops and half a day returns to P2. |
 | **A-8** | **Semi-persistent state** means React Context + reducer with localStorage rehydration — no Redux, Zustand, or Jotai. | The brief says "a provider … without relying on a full-fledged store." | — |
 
 ## 10. Open questions
 
 | ID | Question | Blocking? | Default if unanswered |
 |---|---|---|---|
-| **Q-1** | Is the deadline Wednesday the 2nd or the 9th? (A-1) | No | Build to the 2nd. |
 | **Q-2** | Does Aritzia expect the repo to contain the presentation, or is the deck delivered separately? | No | Deck outline committed to `docs/`; the slides themselves stay out of the repo. |
 | **Q-3** | Should the live demo be publicly reachable, or protected? A public URL with a fake login is harmless but is a public artifact tied to a hiring process. | No | Public. No real credentials exist. |
 

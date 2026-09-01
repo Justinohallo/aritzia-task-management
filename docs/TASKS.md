@@ -3,7 +3,7 @@
 > **No task has been started.** This document is the plan, not a record of
 > progress.
 >
-> **Appetite:** P1 complete by 2026-09-02 17:00 PT (`PROJECT.md` A-1).
+> **Appetite:** P1 complete by 2026-09-02 17:00 PT (confirmed).
 > **Estimated:** ~16.5 focused hours across ~15 sessions.
 
 ## How to run a task
@@ -42,7 +42,7 @@ submission. Depth is added last, on purpose — it is the part that can be cut.
 | **T-09** | Accessibility pass | `AC-A11Y-1..6` | 60m | T-08 |
 | **T-10** | Responsive pass and component boundary | `AC-UI-1..6` | 45m | T-08 |
 | **T-11** | Test sweep | `AC-TEST-1..4` | 60m | T-09, T-10 |
-| **T-12** | Deploy | `AC-DEP-1` | 30m | T-11 |
+| **T-12** | Promote and verify the deployment | `AC-DEP-1` | 30m | T-11 |
 | **T-13** | QA pass | all — verification only | 45m | T-12 |
 | **T-14** | Presentation | — | 120m | T-13 |
 | **T-15** | Freeze and dry run | — | 45m | T-14 |
@@ -61,6 +61,12 @@ as a required status check.
 
 **Done when:** `npm run typecheck && npm run lint && npm test` pass locally and
 in CI on a pull request.
+
+**Hand-off at the end of this task:** the stakeholder connects the Vercel
+project. Connecting it here rather than at T-12 means every subsequent push
+produces a preview deployment, so the live path is exercised eleven tasks
+before anyone depends on it. `TASKS_API_KEY` is set in Vercel's encrypted
+environment at the same time — never committed, never `NEXT_PUBLIC_`.
 
 > CI first, before there is anything to check. It costs an hour once and gates
 > every task after it; retrofitting it at T-11 means eleven tasks landed
@@ -175,12 +181,14 @@ snapshot-only coverage.
 **Done when:** no criterion in `ACCEPTANCE.md` is marked `☑` without a named
 test, and `◐` is used honestly for anything implemented but unproven.
 
-### T-12 · Deploy
+### T-12 · Promote and verify the deployment
 `AC-DEP-1` · 30m · after T-11
 
-Vercel. `TASKS_API_KEY` set as an encrypted environment variable — never
-committed, never `NEXT_PUBLIC_`. Verify the full path on a real phone-width
-viewport, not a desktop devtools emulation.
+The Vercel project was connected at T-01, so this is verification rather than
+setup — which is the point of moving it earlier. Confirm `TASKS_API_KEY` is
+present in the production environment and absent from the bundle
+(`AC-API-3` again, this time against the deployed artifact). Verify the full
+path on a real phone-width viewport, not a desktop devtools emulation.
 
 ### T-13 · QA pass
 verification only · 45m · after T-12
