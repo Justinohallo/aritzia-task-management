@@ -128,7 +128,7 @@ spec problem to fix upstream, not a model problem to work around.
 | 2026-08-31 | unrecorded (pre-hook) | SETUP-01 | - | 10.0 | 4.0 | 0.40 | 208 | 587 | 885,800 | 9,700,000 | 3.02 | unverified (no transcript) | - | - | - | backfilled from /cost; repo init, branch protection. Cost is as /cost reported it; it does not reconcile with Opus 5 list pricing for these counts (see `--selfcheck`). |
 | 2026-08-31 | 89cb008a-f78d-5c8f-bef3-e68cab039af7 | LEDGER-01 | - | 12.2 | 8.2 | 0.67 | 52 | 40,045 | 205,310 | 2,704,523 | 4.41 | claude-opus-5 100% | - | - | - | ledger system build + per-model breakdown; row written by the hook itself |
 | 2026-09-01 | b4369396-4840-5623-8c6e-80a7449e6f70 | ARCH-01 | authored AC-ADD/LIST/FILT/DONE/DEL/API/AUTH/NAV/STATE/UI/A11Y/QUAL/TEST/CI/DEP (78); none implemented | 59.5 | 21.5 | 0.36 | 103 | 89,072 | 479,078 | 5,945,338 | 9.99 | claude-opus-5 100% | 6/1/2 | 0 | n/a (spec only) | intake + acceptance + ADRs + ledger + operating rules + task plan; no application code |
-| 2026-09-01 | c6e5e0b7-6bb2-5887-9e12-5278ba684c17 | LEDGER-02 | - | 1.0 | 0.9 | 0.91 | 284 | 3,504 | 105,618 | 596,726 | 2.44 | claude-fable-5-1 100% | - | - | n/a | add claude-fable-5-1 to the price table (cache read 0.025x); tooling only, no application code |
+| 2026-09-01 | c6e5e0b7-6bb2-5887-9e12-5278ba684c17 | LEDGER-02 | - | 4.4 | 1.5 | 0.34 | 584 | 5,204 | 109,858 | 1,061,764 | 2.73 | claude-fable-5-1 100% | - | - | n/a | add claude-fable-5-1 to the price table (cache read 0.025x); tooling only, no application code |
 
 ## What this ledger cannot measure
 
