@@ -79,6 +79,11 @@ In order. The first failure stops the run, and nothing is claimed.
 | 4 | every criterion the task names exists in `ACCEPTANCE.md` | `TASKS.md` and `ACCEPTANCE.md` must agree on the universe. |
 | 5 | every ADR the detail references exists | The summary tells the agent to read them; they had better be there. |
 
+After the checks pass, the script **prints every `BLOCKERS.md` row whose
+Resolution is `open`**, with rows that name this task or a path in its
+ownership row first. That is a warning, not a refusal — refusing would hold
+every wave on the Architect's calendar (T-17).
+
 A task is *closed* when `docs/LEDGER.md` has a row for it whose `qa_result`
 is set — which is what `/task-close` writes.
 

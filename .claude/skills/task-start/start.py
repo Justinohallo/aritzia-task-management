@@ -46,12 +46,14 @@ import sys
 TASKS_REL = "docs/TASKS.md"
 ACCEPTANCE_REL = "docs/ACCEPTANCE.md"
 LEDGER_REL = "docs/LEDGER.md"
+BLOCKERS_REL = "docs/BLOCKERS.md"
 SPEC_LINT_REL = "scripts/spec-lint.py"
 LEDGER_TABLE_MARKER = "| date | session_id |"
 
 TASK_ID_RE = re.compile(r"\bT-\d+\b")
 CRITERION_RE = re.compile(r"\bAC-([A-Z0-9]+)-(\d+)(?:\.\.(\d+))?\b")
 ADR_RE = re.compile(r"adr/(\d{4}-[a-z0-9-]+\.md)")
+BACKTICKED_RE = re.compile(r"`([^`]+)`")
 
 
 class StartError(Exception):
@@ -258,6 +260,87 @@ def acceptance_index(acceptance_md):
 # ---------------------------------------------------------------------------
 # LEDGER.md
 # ---------------------------------------------------------------------------
+
+def parse_blocker_rows(blockers_md):
+    """Log table rows from BLOCKERS.md, keyed by column header."""
+    lines = blockers_md.split("\n")
+    header_i = next(
+        (i for i, l in enumerate(lines)
+         if l.startswith("| ID") and "Resolution" in l),
+        None,
+    )
+    if header_i is None:
+        return []
+    columns = [c.strip() for c in lines[header_i].strip().strip("|").split("|")]
+    rows = []
+    for line in lines[header_i + 2:]:
+        if not line.startswith("|"):
+            break
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) != len(columns):
+            continue
+        rows.append(dict(zip(columns, cells)))
+    return rows
+
+
+def open_blockers(blockers_md):
+    """Rows whose Resolution cell is exactly `open` (case-insensitive)."""
+    return [
+        r for r in parse_blocker_rows(blockers_md)
+        if (r.get("Resolution") or "").strip().lower() == "open"
+    ]
+
+
+def blocker_blob(row):
+    return " ".join(row.get(k) or "" for k in
+                    ("ID", "Raised by", "Finding", "Resolution", "Commit"))
+
+
+def blocker_rank(row, task_id, owned_paths):
+    """0 = names this task, 1 = names a path this task owns, 2 = other."""
+    blob = blocker_blob(row)
+    if task_id and task_id in blob:
+        return 0
+    for path in owned_paths:
+        if path and path in blob:
+            return 1
+    return 2
+
+
+def prioritise_blockers(rows, task_id, owned_paths):
+    return sorted(
+        rows,
+        key=lambda r: (blocker_rank(r, task_id, owned_paths), r.get("ID") or ""),
+    )
+
+
+def format_open_blockers(rows, task_id, owned_paths):
+    """A warning block, or None when there is nothing to print."""
+    if not rows:
+        return None
+    ranked = prioritise_blockers(rows, task_id, owned_paths)
+    lines = [
+        "OPEN BLOCKERS (%s) — warning, not a refusal" % BLOCKERS_REL,
+        "A wave that opens over an open row builds on a spec someone has",
+        "already said is wrong. Resolve them in an Architect session before",
+        "the next wave. task-start does not refuse.",
+        "",
+    ]
+    for row in ranked:
+        bid = row.get("ID") or "?"
+        raised = row.get("Raised by") or ""
+        finding = row.get("Finding") or ""
+        finding_one = finding.split(".")[0].strip()
+        why = []
+        blob = blocker_blob(row)
+        if task_id and task_id in blob:
+            why.append("names %s" % task_id)
+        elif any(p and p in blob for p in owned_paths):
+            why.append("names a path this task owns")
+        tag = "  [%s]" % "; ".join(why) if why else ""
+        lines.append("  %-6s %s — %s%s" % (bid, raised, finding_one, tag))
+    return "\n".join(lines)
+
 
 def closed_tasks(ledger_md):
     """{task_id: qa_result} for every ledger row whose qa_result is not '-'."""
@@ -753,6 +836,20 @@ def main(argv):
     if s.problems:
         raise StartError("\n\n".join(s.problems))
 
+    # T-17: print open blockers. Warns; does not refuse.
+    blocker_block = None
+    blockers_path = os.path.join(root, BLOCKERS_REL)
+    owned = BACKTICKED_RE.findall((s.own or {}).get("Writes") or "")
+    if os.path.exists(blockers_path):
+        opened = open_blockers(read(blockers_path))
+        if opened:
+            notes.append("open blockers  %d (warning, not a refusal)" % len(opened))
+            blocker_block = format_open_blockers(opened, task_id, owned)
+        else:
+            notes.append("open blockers  none")
+    else:
+        notes.append("open blockers  %s absent" % BLOCKERS_REL)
+
     if not dry_run:
         # (6) claim it. Everything above passed, so this cannot leave half a state.
         cmd = [os.path.join(root, "scripts", "task.sh"), task_id]
@@ -766,6 +863,9 @@ def main(argv):
                 % (proc.stdout.strip(), proc.stderr.strip()))
 
     print_summary(plan, s, supplied_criteria_arg, dry_run, notes)
+    if blocker_block:
+        sys.stdout.write("-" * 72 + "\n")
+        sys.stdout.write(blocker_block + "\n\n")
     return 0
 
 

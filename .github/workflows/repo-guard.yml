@@ -75,3 +75,70 @@ jobs:
             exit 1
           fi
           echo "No oversized files found."
+
+      # T-17: the already-required check must go red on a mistitled or
+      # row-less Builder PR. Sibling jobs below name the failure; this
+      # job is what the ruleset actually waits on.
+      - name: Check PR title against commit criteria
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 .claude/skills/task-close/pr_guard.py --title "$PR_TITLE" --base "$BASE_SHA" --head "$HEAD_SHA" --check title
+
+      - name: Require a ledger row for the task in the title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 .claude/skills/task-close/pr_guard.py --title "$PR_TITLE" --base "$BASE_SHA" --head "$HEAD_SHA" --check ledger
+
+      - name: Lint the spec
+        run: python3 scripts/spec-lint.py
+
+  # T-17: named jobs so a mistitled or row-less PR is obvious in the
+  # checks list. The same scripts also run in "Secrets & large files"
+  # above, which is the required check, so the merge button stays grey
+  # without a ruleset edit.
+  pr-title:
+    name: PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check PR title against commit criteria
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 .claude/skills/task-close/pr_guard.py --title "$PR_TITLE" --base "$BASE_SHA" --head "$HEAD_SHA" --check title
+
+  ledger-row:
+    name: Ledger row
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Require a ledger row for the task in the title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 .claude/skills/task-close/pr_guard.py --title "$PR_TITLE" --base "$BASE_SHA" --head "$HEAD_SHA" --check ledger
+
+  spec-lint:
+    name: Spec lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+      - name: Lint the spec
+        run: |
+          # B-18 asked for a paths filter. Repo Guard already runs on every
+          # PR, spec-lint is stdlib and seconds, and T-17's done-when is
+          # that it runs green on this branch — so it always runs.
+          python3 scripts/spec-lint.py

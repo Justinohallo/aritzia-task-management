@@ -162,12 +162,10 @@ describe("AC-API-4, AC-API-5: the upstream's status and body pass through unchan
 });
 
 /**
- * The `400 invalid_request` path is the frozen contract's (`types/api.ts`,
- * `RouteHandlerErrorStatus`) and no criterion in ACCEPTANCE.md names it —
- * recorded as B-21 in docs/BLOCKERS.md. These tests prove the contract; they
- * claim no criterion.
+ * AC-API-13: a malformed request is 400 invalid_request and never reaches
+ * the upstream. Built in T-06; the describe previously cited B-21.
  */
-describe("Route Handler request validation (types/api.ts: 400 invalid_request; B-21)", () => {
+describe("AC-API-13: the Route Handler rejects a malformed request with 400 invalid_request", () => {
   async function expectInvalid(response: Response, stub: ReturnType<typeof stubUpstream>) {
     expect(response.status).toBe(400);
     const body = (await response.json()) as ApiErrorBody;

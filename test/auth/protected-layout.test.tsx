@@ -10,6 +10,7 @@ import TasksPage from "@/app/(protected)/tasks/page";
 import LoginPage from "@/app/login/page";
 import { announce } from "@/components/ui/live-region";
 import { AUTH_STORAGE_KEY, AUTH_STORAGE_VERSION, writeSession } from "@/lib/auth/session";
+import { useTasks } from "@/lib/tasks/hooks";
 
 const mockRouter = { replace: jest.fn(), push: jest.fn(), prefetch: jest.fn(), back: jest.fn() };
 jest.mock("next/navigation", () => ({ useRouter: () => mockRouter }));
@@ -158,6 +159,16 @@ describe("app/(protected)/layout.tsx", () => {
     expect(screen.getAllByRole("status")).toHaveLength(1);
     act(() => announce("Task deleted"));
     expect(screen.getByRole("status")).toHaveTextContent("Task deleted");
+  });
+
+  it("AC-STATE-1: mounts <TasksProvider> inside RequireAuth so task hooks work on protected pages", () => {
+    function Probe() {
+      const tasks = useTasks();
+      return <p>task count {tasks.length}</p>;
+    }
+    signIn();
+    renderProtected(<Probe />);
+    expect(screen.getByText("task count 0")).toBeInTheDocument();
   });
 
   it("has no automated accessibility violations when signed in", async () => {
