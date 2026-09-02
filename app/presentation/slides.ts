@@ -335,7 +335,7 @@ export const SLIDES: Slide[] = [
         h: "Route Handler",
         lines: [
           "POST /api/tasks · DELETE /api/tasks/:id",
-          "Reads TASKS_API_KEY from server env",
+          "Reads the private key from server env only",
           "Validates with Zod, 400 before upstream",
         ],
       },
