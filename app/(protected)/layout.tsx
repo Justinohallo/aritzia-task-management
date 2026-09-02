@@ -27,8 +27,9 @@ export default function ProtectedLayout({ children }: Readonly<{ children: React
       <RequireAuth>
         <TasksProvider>
           <header className="border-b">
-            <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4 p-4 sm:px-6">
-              <p className="font-semibold tracking-tight">Aritzia Task Management</p>
+            {/* T-10: the header tracks the page's max width at every breakpoint (`AC-UI-3`) and wraps rather than overflows at 320px (`AC-UI-1`). */}
+            <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-between gap-x-4 gap-y-2 p-4 sm:px-6 lg:max-w-5xl lg:px-8">
+              <p className="min-w-0 font-semibold tracking-tight">Aritzia Task Management</p>
               <SessionBar />
             </div>
           </header>

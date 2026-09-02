@@ -92,7 +92,12 @@ export function TaskFilters({ value, onChange }: TaskFiltersProps) {
       }}
     >
       {FILTERS.map((filter) => (
-        <ToggleGroupItem key={filter} value={filter} aria-label={FILTER_LABELS[filter]}>
+        <ToggleGroupItem
+          key={filter}
+          value={filter}
+          className="pointer-coarse:h-11 pointer-coarse:min-w-11 pointer-coarse:px-4"
+          aria-label={FILTER_LABELS[filter]}
+        >
           {FILTER_LABELS[filter]}
         </ToggleGroupItem>
       ))}
