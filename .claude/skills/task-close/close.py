@@ -12,7 +12,8 @@ annotation needs. Run again with the answers to write the row.
 Checks, in order. Any FAIL stops the run before the ledger is touched:
 
   1. a task is claimed                    (rule 1)
-  2. npm typecheck / lint / test pass     (skipped before the scaffold exists)
+  2. npm typecheck / lint / test, then build and test:bundle, pass
+                                          (skipped before the scaffold exists)
   3. every claimed criterion has a test naming it   (rule 5, reported not enforced)
   4. every commit touching application code names a criterion   (rule 3)
   5. every new runtime dependency has an ADR on the branch      (rule 4)
@@ -99,13 +100,18 @@ def is_app_source(path):
 # Checks
 # ---------------------------------------------------------------------------
 
+# In order. build and test:bundle come after test so the AC-API-3 bundle
+# search runs against a production build every close, not only in CI (B-09).
+NPM_SCRIPTS = ("typecheck", "lint", "test", "build", "test:bundle")
+
+
 def check_npm(root, report):
     """(b) The repo's own gates, once there is a package.json to run them from."""
     if not os.path.exists(os.path.join(root, "package.json")):
-        report("SKIP", "checks", "no package.json — skipping typecheck/lint/test")
+        report("SKIP", "checks", "no package.json — skipping %s" % "/".join(NPM_SCRIPTS))
         return []
     failures = []
-    for script in ("typecheck", "lint", "test"):
+    for script in NPM_SCRIPTS:
         proc = run(["npm", "run", script], root)
         if proc.returncode == 0:
             report("PASS", "npm run %s" % script, "")
@@ -292,18 +298,28 @@ def check_ownership(root, base, task_id, report):
         report("SKIP", "ownership", "%s has no File ownership table" % TASKS_REL)
         return []
     lane = table.get(task_id)
+    changed = [p for p in run(["git", "diff", "--name-only", base], root,
+                              check=True).stdout.split("\n") if p.strip()]
     if lane is None:
-        report("FAIL", "ownership", "%s has no File ownership row in %s"
-               % (task_id, TASKS_REL))
-        return ["%s has no row in the File ownership table of %s. Ask the "
-                "Architect for one before three branches collide."
-                % (task_id, TASKS_REL)]
+        # T-12, T-13 and T-15 verify, QA and rehearse; the plan gives them no
+        # lane because they write no application code. That is only a
+        # defect once such a task does write some (T-16 dry run).
+        app = [p for p in changed if is_app_source(p) and not TEST_FILE_RE.search(p)]
+        if not app:
+            report("PASS", "ownership", "%s has no File ownership row and wrote "
+                   "no application code" % task_id)
+            return []
+        report("FAIL", "ownership", "%s has no File ownership row in %s, and wrote %d "
+               "application file(s)" % (task_id, TASKS_REL, len(app)))
+        for path in app:
+            print("    %s" % path)
+        return ["%s has no row in the File ownership table of %s, and this branch "
+                "writes application code. Ask the Architect for a row before three "
+                "branches collide." % (task_id, TASKS_REL)]
     if lane["all"]:
         report("PASS", "ownership", "%s owns everything for this wave" % task_id)
         return []
 
-    changed = [p for p in run(["git", "diff", "--name-only", base], root,
-                              check=True).stdout.split("\n") if p.strip()]
     owned = [pattern_to_re(x) for x in lane["writes"]]
     read_only = {x: pattern_to_re(x) for x in lane["reads"]}
 
