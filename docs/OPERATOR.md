@@ -116,6 +116,10 @@ Set the task before it starts: `scripts/task.sh ARCH-NN` (the skill is
 Builder-only). Architect sessions get an `ARCH-` row in the ledger, as the
 existing ones do.
 
+Title the Architect's pull request with the `ARCH-NN` and the blocker IDs,
+not a `T-NN`: Repo Guard reads any `T-NN` in a title as a Builder PR and
+demands that task's ledger row (`B-23`). Name the task in the body.
+
 **QA** — T-13 only, and only after T-12 is merged. Fresh session, from `main`,
 no shared context with any Builder:
 
