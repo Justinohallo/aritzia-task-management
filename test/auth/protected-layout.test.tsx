@@ -13,7 +13,11 @@ import { AUTH_STORAGE_KEY, AUTH_STORAGE_VERSION, writeSession } from "@/lib/auth
 import { useTasks } from "@/lib/tasks/hooks";
 
 const mockRouter = { replace: jest.fn(), push: jest.fn(), prefetch: jest.fn(), back: jest.fn() };
-jest.mock("next/navigation", () => ({ useRouter: () => mockRouter }));
+jest.mock("next/navigation", () => ({
+  useRouter: () => mockRouter,
+  usePathname: () => "/tasks",
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 const PAGE_TEXT = "Secret task data";
 
