@@ -1,19 +1,18 @@
-import Link from "next/link";
+import { RedirectByAuthState } from "@/lib/auth/guards";
+import { AuthProvider } from "@/lib/auth/provider";
 
 /**
- * Placeholder root page from the T-01 scaffold. T-02 replaces this file with
- * the auth-state redirect (`AC-NAV-3`); nothing here is contract.
+ * `/` — T-02 (ADR-0001; `AC-NAV-3`).
+ *
+ * The root has no content of its own: it sends a signed-in user to `/tasks`
+ * and everyone else to `/login`. The decision needs `sessionStorage`, which
+ * only the browser can read, so this is a client redirect after mount rather
+ * than a server `redirect()`.
  */
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col items-start justify-center gap-4 p-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Aritzia Task Management</h1>
-      <p className="text-muted-foreground">
-        The scaffold is in place. Log in and the task list arrive with the next wave.
-      </p>
-      <Link href="/tasks" className="underline underline-offset-4">
-        Go to tasks
-      </Link>
-    </main>
+    <AuthProvider>
+      <RedirectByAuthState />
+    </AuthProvider>
   );
 }
