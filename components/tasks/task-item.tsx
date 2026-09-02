@@ -12,10 +12,13 @@
  * activated by Enter or Space like every native button (`AC-DEL-4`) — and it acts
  * at once: no confirmation dialog (`AC-DEL-3`, `AM-7`).
  *
- * Wave 2: the row knows nothing about the network. T-08 wires the optimistic
- * lifecycle through the same two callbacks and adds the in-flight state.
+ * Wave 3 (T-08): a row whose create is in flight (`sync: 'syncing'`) says
+ * so — a "Saving…" badge with a spinner, `aria-busy` on the row, and its
+ * delete control disabled until the server has the record (`AC-API-11`).
+ * The word, not the spinner, is what assistive technology reads. The row
+ * itself never talks to the network; `task-list.tsx` runs the mutations.
  */
-import { AlertCircleIcon, Trash2Icon } from "lucide-react";
+import { AlertCircleIcon, Loader2Icon, Trash2Icon } from "lucide-react";
 import { useId } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -51,12 +54,15 @@ export function TaskItem({ task, onCompletedChange, onDelete }: TaskItemProps) {
   const id = useId();
   const titleId = `${id}-title`;
   const overdue = !task.completed && isOverdue(task.dueDate);
+  const syncing = task.sync === "syncing";
 
   return (
     <li
       className={cn("flex items-start gap-3 rounded-md border bg-card p-3 text-card-foreground", task.completed && "bg-muted/40")}
       data-completed={task.completed}
       data-overdue={overdue}
+      data-sync={task.sync}
+      aria-busy={syncing || undefined}
     >
       <Checkbox
         id={`${id}-completed`}
@@ -84,6 +90,12 @@ export function TaskItem({ task, onCompletedChange, onDelete }: TaskItemProps) {
               Overdue
             </Badge>
           ) : null}
+          {syncing ? (
+            <Badge variant="outline">
+              <Loader2Icon aria-hidden="true" className="animate-spin" />
+              Saving…
+            </Badge>
+          ) : null}
         </div>
       </div>
       <Button
@@ -91,7 +103,8 @@ export function TaskItem({ task, onCompletedChange, onDelete }: TaskItemProps) {
         variant="ghost"
         size="icon-sm"
         aria-label={`Delete ${task.title}`}
-        title="Delete"
+        title={syncing ? "Saving…" : "Delete"}
+        disabled={syncing}
         onClick={() => onDelete(task)}
       >
         <Trash2Icon aria-hidden="true" />

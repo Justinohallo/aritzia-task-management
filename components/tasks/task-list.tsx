@@ -14,20 +14,29 @@
  *
  * A completion change under a filter removes the row from view, and that
  * removal is announced through the one live region (`AC-FILT-6`) — this
- * component creates none of its own. Wave 2: complete and delete are local
- * dispatches; T-08 replaces them with the optimistic mutations.
+ * component creates none of its own. Completion is local: the brief's API
+ * is called on addition and removal only.
+ *
+ * Wave 3 (T-08): delete goes through the optimistic mutation in
+ * `lib/tasks/mutations.ts` (`AC-API-2`, `AC-API-9`). The row is gone
+ * before the request is sent, so the in-flight indicator lives here, above
+ * the list, naming the task being deleted (`AC-API-11`); the live region
+ * says the same. A final failure restores the row — its position follows
+ * from the derived order — and its message is shown here too.
  *
  * `app/(protected)/tasks/page.tsx` imports `{ TaskList }` from here; the
  * export name is the T-01 contract. `useSearchParams` needs a Suspense
  * boundary above it for static rendering, so this file supplies its own.
  */
-import { Suspense, useCallback } from "react";
+import { Loader2Icon } from "lucide-react";
+import { Suspense, useCallback, useState } from "react";
 
 import { TaskFilters, FILTER_LABELS, matchesFilter, useTaskFilter } from "@/components/tasks/task-filters";
 import { TaskItem } from "@/components/tasks/task-item";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAnnounce } from "@/components/ui/live-region";
 import { useTaskDispatch, useTasks, useTasksHydrated } from "@/lib/tasks/hooks";
+import { useTaskMutations } from "@/lib/tasks/mutations";
 import type { Filter, Task } from "@/types/task";
 
 /** `AC-LIST-3`: due date ascending, ties broken by creation time ascending. Stable; does not mutate. */
@@ -55,7 +64,11 @@ function TaskListBody() {
   const hydrated = useTasksHydrated();
   const dispatch = useTaskDispatch();
   const announce = useAnnounce();
+  const { deleteTask } = useTaskMutations();
   const [filter, setFilter] = useTaskFilter();
+  /** Deletes in flight, in the order they were started (`AC-API-11`). */
+  const [deleting, setDeleting] = useState<readonly Task[]>([]);
+  const [failure, setFailure] = useState<string | null>(null);
 
   const onCompletedChange = useCallback(
     (task: Task, completed: boolean) => {
@@ -74,10 +87,14 @@ function TaskListBody() {
   );
 
   const onDelete = useCallback(
-    (task: Task) => {
-      dispatch({ type: "remove", id: task.id });
+    async (task: Task) => {
+      setFailure(null);
+      setDeleting((current) => [...current, task]);
+      const outcome = await deleteTask(task);
+      setDeleting((current) => current.filter((t) => t.id !== task.id));
+      if (!outcome.ok) setFailure(outcome.failure.message);
     },
-    [dispatch],
+    [deleteTask],
   );
 
   const visible = sortTasks(tasks.filter((task) => matchesFilter(filter, task.completed)));
@@ -85,6 +102,17 @@ function TaskListBody() {
   return (
     <>
       <TaskFilters value={filter} onChange={setFilter} />
+      {deleting.length > 0 ? (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="task-list-deleting">
+          <Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
+          {deleting.length === 1 ? `Deleting "${deleting[0].title}"…` : `Deleting ${deleting.length} tasks…`}
+        </p>
+      ) : null}
+      {failure ? (
+        <p className="text-sm text-destructive" data-testid="task-list-failure">
+          {failure}
+        </p>
+      ) : null}
       {!hydrated ? (
         <ListSkeleton />
       ) : tasks.length === 0 ? (

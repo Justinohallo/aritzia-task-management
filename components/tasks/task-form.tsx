@@ -9,19 +9,25 @@
  * validation is off (`noValidate`) so every rule and every message come from
  * the one module, and a past date is accepted (`AC-ADD-7`, `AM-4`).
  *
- * Wave 2: no API yet. A valid task is dispatched straight to the reducer as
- * `confirmed` and the provider persists it. T-08 replaces the dispatch with
- * the optimistic create and adds the in-flight state (`AC-ADD-8`).
+ * Wave 3 (T-08): a valid task goes through the optimistic create in
+ * `lib/tasks/mutations.ts` (`AC-API-1`, `AC-API-8`). The fields clear and
+ * focus returns to the title as soon as the row is applied — the user can
+ * start typing the next task — but the submit control is disabled, and
+ * says so, until the request settles (`AC-ADD-8`, `AC-API-11`). A final
+ * failure is shown inline under the form, and the emptied fields are
+ * refilled so the task can be resubmitted; the live region has already
+ * announced the same message (`AC-API-7`, `AC-API-12`).
  *
  * `app/(protected)/tasks/page.tsx` imports `{ TaskForm }` from here; the
  * export name is the T-01 contract.
  */
+import { Loader2Icon } from "lucide-react";
 import { useId, useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useTaskDispatch } from "@/lib/tasks/hooks";
+import { useTaskMutations } from "@/lib/tasks/mutations";
 import {
   validateTaskInput,
   type TaskField,
@@ -30,7 +36,11 @@ import {
 } from "@/lib/tasks/validation";
 import type { Task } from "@/types/task";
 
-/** A new, pending, locally confirmed task (wave 2; see `lib/tasks/actions.ts`). */
+/**
+ * A new, pending task. `id` and `createdAt` are assigned here, in the
+ * browser, and echoed by the server (`AC-API-8`). The sync state is set by
+ * the reducer when the row is applied.
+ */
 function newTask(value: ValidTaskInput): Task {
   return {
     id: crypto.randomUUID(),
@@ -38,34 +48,57 @@ function newTask(value: ValidTaskInput): Task {
     dueDate: value.dueDate,
     completed: false,
     createdAt: new Date().toISOString(),
-    sync: "confirmed",
+    sync: "syncing",
   };
 }
 
 export function TaskForm() {
-  const dispatch = useTaskDispatch();
+  const { createTask } = useTaskMutations();
   const id = useId();
   const titleId = `${id}-title`;
   const dueDateId = `${id}-due-date`;
   const errorId = (field: TaskField) => `${id}-${field}-error`;
+  const failureId = `${id}-failure`;
 
   const titleRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [errors, setErrors] = useState<TaskFieldErrors>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  // The synchronous half of the double-submit guard (`AC-ADD-8`): a second
+  // Enter before React has re-rendered the disabled button lands here.
+  const inFlight = useRef(false);
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (inFlight.current) return;
     const result = validateTaskInput({ title, dueDate });
     if (!result.ok) {
       setErrors(result.errors);
       return;
     }
-    dispatch({ type: "add", task: newTask(result.value) });
+
+    const task = newTask(result.value);
+    inFlight.current = true;
+    setSubmitting(true);
+    setFailure(null);
     setErrors({});
     setTitle("");
     setDueDate("");
     titleRef.current?.focus();
+
+    const outcome = await createTask(task);
+
+    inFlight.current = false;
+    setSubmitting(false);
+    if (!outcome.ok) {
+      setFailure(outcome.failure.message);
+      // Refill a field the user has not started on since, so the failed
+      // task can be resubmitted rather than retyped.
+      setTitle((current) => (current === "" ? task.title : current));
+      setDueDate((current) => (current === "" ? task.dueDate : current));
+    }
   }
 
   const invalid = (field: TaskField) => (errors[field] ? true : undefined);
@@ -115,9 +148,21 @@ export function TaskForm() {
           ) : null}
         </div>
 
-        <Button type="submit" className="self-start">
-          Add task
+        <Button type="submit" className="self-start" disabled={submitting} aria-describedby={failure ? failureId : undefined}>
+          {submitting ? (
+            <>
+              <Loader2Icon aria-hidden="true" className="animate-spin" />
+              Adding…
+            </>
+          ) : (
+            "Add task"
+          )}
         </Button>
+        {failure ? (
+          <p id={failureId} className="text-sm text-destructive" data-testid="task-form-failure">
+            {failure}
+          </p>
+        ) : null}
       </form>
     </section>
   );
