@@ -19,7 +19,7 @@ export function SessionBar() {
           Signed in as <span className="font-medium text-foreground">{user.username}</span>
         </span>
       ) : null}
-      <Button type="button" variant="outline" size="sm" onClick={logout}>
+      <Button type="button" variant="outline" size="sm" className="pointer-coarse:h-11 pointer-coarse:px-4" onClick={logout}>
         Log out
       </Button>
     </div>
