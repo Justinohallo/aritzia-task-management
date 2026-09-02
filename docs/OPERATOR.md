@@ -192,10 +192,19 @@ will actually see:
    a criterion. So:
 
    ```
-   feat(tasks): add-task form with validation [AC-ADD-1..7]
+   feat(tasks): T-04 add-task form with validation [AC-ADD-1..7]
    ```
 
    A title without the IDs puts an unattributed commit on `main` for good.
+
+   **The bracketed set is the union of the criterion IDs across every commit
+   on the branch, not the first commit's.** The platform pre-fills the title
+   from the first commit only, so a branch whose later commits added
+   criteria lands short unless you widen the brackets by hand. That is how
+   #17 reached `main` without `AC-AUTH-1`, `AC-NAV-1..2` and #18 without
+   `AC-API-3` (ARCH-04). Run `git log origin/main.. --format=%s` on the
+   branch, or read the commit list on the PR, and take every ID you see.
+   After T-17, Repo Guard fails a title whose set is not that union.
 3. Fill in the PR template's *How this was verified*. The session's done
    report has the content.
 4. Wait for **Repo Guard** and, after T-01, the CI workflow (typecheck,
@@ -218,6 +227,13 @@ main ─ gate ────┼── session B: T-03 ──┼──── merge 
                 └── session C: T-06 ──┘
 ```
 
+0. **Open [`BLOCKERS.md`](BLOCKERS.md).** Every row whose Resolution is
+   `open` is resolved in an Architect session before wave *N+1* starts —
+   one `docs:` commit, on the pattern of ARCH-03 and ARCH-04. Builders
+   append rows and cannot close them; a wave that opens over an open row
+   builds on a spec someone has already said is wrong. (ARCH-04: four rows
+   sat open through wave 1 because this step did not exist. After T-17,
+   `task-start` prints the open rows, but it warns rather than refuses.)
 1. Confirm the gate: every PR of the previous wave is merged and `main` is
    green. `task-start` will refuse otherwise, but check first — a refused
    session is a wasted spin-up.
