@@ -8,7 +8,7 @@ scratch. One set of slides, two renderings:
 | `index.html` | **The presented version.** Open it in a browser; no server, no build. |
 | `aritzia-task-management.pptx` | **The download.** The same deck as PowerPoint, with speaker notes. Linked from the HTML deck's top-right button. |
 | `slides.js` | The deck as data: every slide, its speaker notes, and its time budget. Both renderings read this file, so an edit here changes both. |
-| `build-deck.cjs` | Renders `slides.js` to the `.pptx` with pptxgenjs. |
+| `build-deck.mjs` | Renders `slides.js` to the `.pptx` with pptxgenjs. |
 
 ## Presenting from `index.html`
 
@@ -74,11 +74,11 @@ EOF
 ## Rebuilding the `.pptx`
 
 pptxgenjs is a docs tool, not an application dependency, so it is not in
-`package.json`. Install it anywhere and point Node at it:
+`package.json`. Install it without recording it, then run from the repo root:
 
 ```bash
 npm install --no-save pptxgenjs@3
-node docs/presentation/build-deck.cjs
+node docs/presentation/build-deck.mjs
 ```
 
 `--no-save` leaves `package.json` and the lockfile untouched. Commit the

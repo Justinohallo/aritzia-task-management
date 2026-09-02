@@ -4,17 +4,21 @@
  *
  * pptxgenjs is not a dependency of the application (CLAUDE.md rule 4 covers
  * runtime dependencies; this is a docs tool), so it is not in package.json.
- * Run from any directory that has it installed:
+ * Install it without recording it, then run from the repo root:
  *
- *   npm install --no-save pptxgenjs@3     # or: NODE_PATH=/somewhere/node_modules
- *   node docs/presentation/build-deck.cjs
+ *   npm install --no-save pptxgenjs@3
+ *   node docs/presentation/build-deck.mjs
  *
  * The output is committed beside index.html so the "Download .pptx" link
  * works from a file:// open of the deck with no build step.
  */
-const path = require("path");
-const PptxGenJS = require("pptxgenjs");
-const { slides } = require("./slides.js");
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import PptxGenJS from "pptxgenjs";
+import DECK from "./slides.js";
+
+const { slides } = DECK;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const INK = "1A1A1A", INK2 = "555555", INK3 = "8A8A8A", PAPER2 = "F5F5F5", LINE = "D0D0D0", ACCENT = "E8630A", WHITE = "FFFFFF", DARK = "1A1A1A", ONDARK2 = "B8B8B8";
 const FONT = "Arial";
