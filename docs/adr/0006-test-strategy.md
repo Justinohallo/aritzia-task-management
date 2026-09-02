@@ -1,6 +1,6 @@
 # ADR-0006 — Jest + RTL + MSW, behaviour-first
 
-**Status:** Accepted · **Date:** 2026-09-01 · **Criteria:** `AC-TEST-1..4`, `AC-A11Y-6`, and every criterion's proof
+**Status:** Accepted, amended 2026-09-02 (ARCH-06) · **Date:** 2026-09-01 · **Criteria:** `AC-TEST-1..4`, `AC-A11Y-6`, and every criterion's proof
 
 ## Context
 
@@ -94,6 +94,32 @@ not a browser: it does not lay out, so `AC-UI-1..4` — responsiveness — canno
 be meaningfully asserted here and is verified by manual inspection at 320, 768,
 and 1024 pixels. Claiming responsive coverage from jsdom would be a false
 assurance, which is worse than an acknowledged manual check.
+
+## Amendment — ARCH-06, 2026-09-02
+
+The delivered suite had 299 tests, 33 of which asserted on configuration
+files and the source tree: a Jest test spawning ESLint to confirm the ESLint
+config, another regex-parsing the CI workflow, another walking `components/`
+to check import directions. Every one of them was a consequence of rule 5
+applied to a criterion that is a property of tooling, and every one of them
+is a lint rule that would give the same guarantee faster and in the editor.
+
+**Decision.** A criterion about the toolchain is proved by the tool. The
+`⚙` mark (`ACCEPTANCE.md` legend) names the rule; the Jest meta-tests are
+deleted (T-18). Behaviour tests are untouched, and `AC-TEST-1`'s
+cross-check between `ACCEPTANCE.md` and the suite stays, because a document
+and a test tree drifting apart is a behaviour of the repository.
+
+**Build vs. buy.** `eslint-plugin-testing-library` — bought, as a dev
+dependency under this ADR. It enforces `AC-TEST-2`'s query discipline with
+rules maintained by the Testing Library authors; the hand-written regexes it
+replaces caught five patterns and would have to be extended by hand for
+each new one. Boundary rules (`AC-UI-5..6`) are `no-restricted-imports` and
+`no-restricted-syntax` from ESLint core — nothing to buy.
+
+**Consequence.** `npm test` no longer collects coverage on a local run;
+`npm run test:ci` does, and CI runs that. The threshold is enforced where it
+matters and the fast path is fast.
 
 ## eCommerce mapping
 

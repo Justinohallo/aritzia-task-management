@@ -1,6 +1,6 @@
 # ADR-0003 — shadcn/ui over a packaged component library
 
-**Status:** Accepted · **Date:** 2026-09-01 · **Criteria:** `AC-UI-5..6`, `AC-A11Y-1..6`
+**Status:** Accepted, amended 2026-09-02 (ARCH-06) · **Date:** 2026-09-01 · **Criteria:** `AC-UI-5..6`, `AC-A11Y-1..6`
 
 ## Context
 
@@ -75,6 +75,19 @@ Respecting the boundary now costs nothing and makes the split mechanical the
 day a second consumer — a storefront, an internal admin, a design-system
 package — actually appears. Naming the seam and declining to cut it is the
 decision; the seam without the cut is the deliverable.
+
+## Amendment — ARCH-06, 2026-09-02
+
+Sixteen primitives were installed at T-01 on the plan's guess at what the
+screens would need. The finished screens use eleven. The other five
+(`dialog`, `select`, `tabs`, `radio-group`, `separator`) are tree-shaken
+from the bundle and cost nothing shipped, but they are source the team
+owns and does not use — and `AC-UI-5` as first written *required* two of
+them to exist. The criterion is reworded (`B-25`) and the five files are
+deleted (T-19), with `tw-animate-css`, whose only consumer was `dialog`.
+The seam is unchanged: `components/ui/` still holds only app-agnostic
+primitives, now enforced by a lint rule rather than a Jest test (T-18).
+"Own the source" includes deleting the source you do not use.
 
 ## Alternatives considered
 
