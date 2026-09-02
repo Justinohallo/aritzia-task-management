@@ -120,6 +120,37 @@ Title the Architect's pull request with the `ARCH-NN` and the blocker IDs,
 not a `T-NN`: Repo Guard reads any `T-NN` in a title as a Builder PR and
 demands that task's ledger row (`B-23`). Name the task in the body.
 
+**Maintenance** — after T-13 and T-14 are closed, for a bug or a cleanup
+(`TASKS.md` T-18, ARCH-06). Fresh session from `main`, one per fix, never
+two at once — wave 7 is serial, and that is what lets T-18 own everything.
+Not while T-15 is in progress: nothing merges between the freeze and the
+presentation. Replace the bug line and the criteria:
+
+```
+You are the Builder for T-18, the maintenance task. Read CLAUDE.md first.
+
+1. Run scripts/task.sh T-18 <criteria the bug violates, e.g. AC-UI-1,AC-UI-2>.
+   Not /task-start: its wave gate waits on T-15, and wave 7 does not.
+   Read docs/TASKS.md T-18, then the ADRs that cover the code you will touch.
+2. Fix this one thing: <B-NN, or a one-line description of the bug>.
+   Write a test that names the criterion where a Jest test can. Do not edit
+   components/ui/** — it is frozen; if the fix needs it, that is a blocker.
+3. Commit with Conventional Commits and the violated criteria in brackets:
+   fix(<scope>): T-18 <summary> [<criteria>]. A cleanup that meets no
+   criterion is refactor: and names the criteria whose tests cover the code.
+   Push after every commit.
+4. If the fix is ambiguous or would need a spec change, stop: append a row
+   to docs/BLOCKERS.md, push, and tell me. Do not edit any other file under
+   docs/.
+5. When it is fixed and green, report what changed and what proves it. Do
+   not run /task-close yet.
+```
+
+Close it with the §4 turn; the notes line names the bug (`notes: "B-25 …"`),
+so the ledger row is attributable to the fix and not only to T-18. Title
+the PR `fix(<scope>): T-18 <summary> [<criteria>]`; Repo Guard wants the
+T-18 row in the diff, and the close turn writes it.
+
 **QA** — T-13 only, and only after T-12 is merged. Fresh session, from `main`,
 no shared context with any Builder:
 
@@ -250,6 +281,9 @@ main ─ gate ────┼── session B: T-03 ──┼──── merge 
 Wave 4 has a special case: T-09 merges before T-10, and T-10 rebases. Wave 5
 is a chain (T-11 → T-12 → T-13) with T-14 running alongside it; T-14 is a
 wave-5 task since ARCH-03 (it sat at "wave 4–5", which deadlocked the gate).
+Wave 7 (T-18, maintenance) is not a wave you run: it is one session per fix,
+started with the maintenance prompt in §3 whenever there is a fix to make,
+and never more than one at a time.
 
 ## 7. What is different in the cloud
 

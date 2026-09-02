@@ -49,7 +49,10 @@ docs: amend ADR-0004 with the key-holder decision
 
 A commit that touches application code names the acceptance criteria it
 satisfies, in brackets at the end; `chore:` and `docs:` commits are exempt.
-`CLAUDE.md` rule 3 is the full statement. This keeps history readable and
+A `refactor:` commit satisfies none, so it names the criteria whose tests
+cover the code it touches — `refactor(tasks): T-18 extract the date parser
+[AC-ADD-3, AC-ADD-4]` — and the PR title carries the task ID and the same
+IDs. `CLAUDE.md` rule 3 is the full statement. This keeps history readable and
 lets a reviewer trace any line of the brief to the commit that met it.
 
 ## Merging

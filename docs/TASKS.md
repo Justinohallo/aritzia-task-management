@@ -4,12 +4,15 @@
 > progress.
 >
 > **Appetite:** P1 complete by 2026-09-02 17:00 PT (confirmed).
-> **Estimated:** 18h50m of work across 18 tasks — 17h15m of build once the
+> **Estimated:** 18h50m of work across 19 tasks — 17h15m of build once the
 > three tooling tasks are excluded. The Sequence table is the source; these
 > totals are its sum. **9h45m of wall clock** when run as six waves of
-> concurrent agents. T-00 and T-16 add tooling work and no wall clock: they
-> run inside wave 0, alongside the longer T-01. T-17 is charged to wave 1
-> but runs after it; see its detail for why.
+> concurrent agents, plus an open-ended seventh. T-00 and T-16 add tooling
+> work and no wall clock: they run inside wave 0, alongside the longer T-01.
+> T-17 is charged to wave 1 but runs after it; see its detail for why. T-18
+> is the maintenance phase and carries `0m` in both tables: it has no fixed
+> duration, and its cost is measured per fix in the ledger rather than
+> estimated here.
 > See [Running in parallel](#running-in-parallel).
 >
 > **Amended 2026-09-01 (ARCH-03).** A fresh-session critic pass over the
@@ -25,6 +28,15 @@
 > and an `interventions` column that has never been filled. The findings
 > are the [ARCH-04](#arch-04--workflow-amendments-from-the-wave-1-review)
 > entry below; the tooling they need is **T-17**.
+>
+> **Amended 2026-09-02 (ARCH-06).** The build is done — T-13 marked
+> `ACCEPTANCE.md`, T-14 shipped the deck, the app is deployed — and the first
+> post-QA bug (`B-25`, from the operator's phone walk) had no lane: every
+> task with an ownership row is closed, and the Builder fixing it failed
+> `task-close` check 6. The plan now has a **wave 7, maintenance**, and one
+> standing task, **T-18**, that owns everything but the frozen
+> `components/ui/**`. One session per fix, each its own ledger row, so the
+> ledger gains a per-fix maintenance cost the deck can cite.
 
 ## How to run a task
 
@@ -80,6 +92,7 @@ wrong, the wave is wrong too.
 | **T-13** | QA pass | all — verification only | 45m | **5** | T-12 |
 | **T-14** | Presentation | — | 120m | **5** | wave gate only — the specs, *not* the code |
 | **T-15** | Freeze and dry run | — | 45m | **6** | T-13, T-14 |
+| **T-18** | Maintenance — one session per bug or cleanup, standing | the criteria each fix violates | 0m | **7** | T-13, T-14 — not T-15; see the detail |
 
 Two dependencies in the original plan turned out not to exist, and both are
 worth naming because they are where the parallelism comes from:
@@ -118,6 +131,12 @@ and CI time at each boundary is counted.
 | **4** | 2 | T-09 ‖ T-10 | 60m | T-09 and T-10 merged |
 | **5** | 2 | T-11 → T-12 → T-13 ‖ T-14 | 135m | QA pass recorded, T-14 drafted |
 | **6** | 1 | T-15 | 45m | — |
+| **7** | 1 | T-18, one session per fix, strictly serial | 0m | open-ended — no wave follows; gated on T-13 and T-14 closed, not on T-15 (*ARCH-06*) |
+
+Wave 7 is serial by definition: one maintenance session at a time, so the
+one-writer-per-path constraint that `task-close` check 6 enforces has nothing
+to protect, and T-18's lane is the whole tree. Its `0m` is not an estimate;
+the phase has no fixed duration and each fix is costed by its own ledger row.
 
 **Parallelism buys wall clock, not money.** Total token spend goes up slightly:
 each concurrent agent reads the same spec independently, and every wave
@@ -151,6 +170,7 @@ found a spec gap and writes a blocker.**
 | **T-11** | `**/*.test.*`, `jest.config` thresholds | — |
 | **T-12** | for one commit, and nothing else in it: `app/login/login-form.tsx` and `lib/auth/session-bar.tsx` (the `B-22` touch-target classes) | everything |
 | **T-14** | `docs/presentation/**` | all specs, `LEDGER.md` |
+| **T-18** | everything — except `components/ui/**`, which stays frozen as T-01 left it (*ARCH-06*; wave 7 runs one session at a time, so there is no second writer to collide with) | — |
 
 Three paths are contended and are handled by rule, not by hope:
 
@@ -194,10 +214,16 @@ task after wave 0 creates a live region of its own. *(ARCH-03)*
    [AC-LIST-1..4, AC-FILT-1..6, AC-DONE-1..3, AC-DEL-1, AC-DEL-3..4]`. Branch
    commits carry IDs for the close check; the title carries them for the
    history a reviewer actually reads. *(ARCH-03)*
+   *ARCH-06:* a cleanup that satisfies no criterion — a `refactor:` commit —
+   references the criteria whose tests cover the code it touches, not a
+   criterion it meets: `refactor(tasks): T-18 extract the date parser
+   [AC-ADD-3, AC-ADD-4]` says which tests prove the change is behaviour-
+   preserving. The PR title carries `T-18` and the same IDs, as before.
+   `CLAUDE.md` rule 3 and `CONTRIBUTING.md` state the same.
 2. **Do not start a wave until the previous wave is merged and `main` is
    green.** The waves are the synchronisation points; there are only six of
-   them, and skipping one is how two agents end up building against different
-   versions of the same contract. Inside a wave the `Depends on` cell still
+   them before maintenance, and skipping one is how two agents end up
+   building against different versions of the same contract. Inside a wave the `Depends on` cell still
    holds — wave 5 is a chain, and T-12 does not start until T-11 is closed.
 3. **Merge order within a wave is ascending task number.** Later pull requests
    rebase onto `main` and re-run CI before merging. Do not merge two pull
@@ -696,7 +722,62 @@ Nothing merges after this task begins. Full dry run against the live URL, timed.
 Record a local fallback path in case the deployment fails during the
 presentation.
 
----
+*ARCH-06:* "nothing merges" includes T-18 fix sessions. A bug found before
+the freeze is fixed and merged before T-15 opens, which is why wave 7 does
+not gate on T-15; a bug found after it waits until the presentation is over.
+
+### T-18 · Maintenance
+standing · no fixed duration (`0m` in the tables) · **wave 7, serial** — after T-13 *and* T-14 are closed · *added by ARCH-06*
+
+The build's last owned lane closed with T-12, and the first post-QA bug
+(`B-25`, an iOS WebKit date field the phone walk found) had nowhere to land:
+`app/globals.css` is T-01's, `components/tasks/task-form.tsx` is
+T-04/T-09/T-10's, all closed, and `task-close` check 6 rightly refused a
+T-12 session that wrote them. Resolving that with another per-commit
+ownership exception (the `B-20`/`B-22` pattern) would repeat for every bug.
+This task is the lane instead.
+
+**A fix session**, one per bug or cleanup:
+
+1. Start a fresh session from `main` with the maintenance prompt in
+   [`OPERATOR.md`](OPERATOR.md#the-two-other-roles). Claim with
+   `scripts/task.sh T-18 <criteria>`, where the criteria are the ones the
+   bug violates (or, for a cleanup, the ones whose tests cover the code
+   touched — rule 1 above). Not `/task-start`: its wave gate holds any
+   wave-7 task until every wave-6 task is closed, and T-15 is still planned;
+   `scripts/task.sh` claims without the gate, and the gate is protecting
+   nothing here because the phase is serial. After T-15 closes, `/task-start
+   T-18` works too and prints the open blockers.
+2. Fix it, with a test that names the criterion where a Jest test can. The
+   commit's criterion IDs are the criteria the bug violates:
+   `fix(tasks): T-18 iOS date field placeholder and sizing [AC-UI-1, AC-UI-2]`.
+3. `/task-close` runs unchanged. Check 6 passes on the word `everything` in
+   the ownership row; the `components/ui/**` carve-out is a rule the session
+   keeps, not one the script enforces. Check 4 still requires an `[AC-…]` on
+   every commit touching application code.
+4. The ledger row's `notes` name the bug — a `B-` row, or a one-line
+   description when there is none — so the row is attributable to a fix and
+   not only to a task. `criteria_ids` carries the violated criteria.
+5. PR title `fix(<scope>): T-18 <summary> [<criteria>]`, squash-merged as
+   before. Repo Guard's ledger-row job needs a `T-18` row in the diff; that
+   is what step 3 writes.
+
+**One session per task still holds.** T-18 is the task and every fix is its
+own session, so each fix is one ledger row: the ledger gains a per-fix
+maintenance cost, and the deck can cite it. Two fixes in one session is a
+compound row, and `CLAUDE.md` rule 2 says to label it rather than split it.
+
+**What stays frozen:** `components/ui/**`, for the reason it was frozen at
+T-01 — the primitives are shadcn's and a maintenance fix that edits one is
+a design change, not a fix. A fix that needs a primitive changed writes a
+blocker. `package.json` is no longer T-01's alone — a maintenance dependency
+is allowed — but rule 4 holds: an ADR first, and check 5 enforces it.
+
+**`◉` marks and `ACCEPTANCE.md`:** a fix session is a Builder session and
+writes no status mark. If a fix changes which test proves a criterion, it
+says so in its ledger notes and the Architect or a QA session re-marks.
+
+**Done when:** never, by design. The phase closes when the repository does.
 
 ## If time runs short
 
