@@ -65,3 +65,7 @@ Thumbs.db
 # Ledger task-tagging state (per-session, local)
 .current-task
 .current-criteria
+
+# --- Next.js / Vercel ---
+.vercel/
+next-env.d.ts
