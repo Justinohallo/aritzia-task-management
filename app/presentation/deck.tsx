@@ -75,12 +75,15 @@ export function Deck() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Step from the hash, not from `cur`: hashchange is delivered after
+      // this handler returns, so two quick presses (a clicker) would
+      // otherwise both step from the same stale slide.
       if (["ArrowRight", " ", "PageDown"].includes(e.key)) {
         e.preventDefault();
-        go(cur + 1);
+        go(readHash() + 1);
       } else if (["ArrowLeft", "PageUp"].includes(e.key)) {
         e.preventDefault();
-        go(cur - 1);
+        go(readHash() - 1);
       } else if (e.key === "Home") go(0);
       else if (e.key === "End") go(SLIDES.length - 1);
       else if (e.key === "n" || e.key === "N") setNotesOn((v) => !v);
@@ -92,7 +95,7 @@ export function Deck() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cur, go]);
+  }, [go]);
 
   const cols = Math.max(1, Math.floor((typeof window === "undefined" ? W : window.innerWidth - 48) / (W * 0.25 + 16)));
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
@@ -156,7 +159,7 @@ export function Deck() {
         </div>
       ) : null}
 
-      <div className={styles.help}>← → navigate · N notes · Esc overview · T reset timer</div>
+      {notesOn ? null : <div className={styles.help}>← → navigate · N notes · Esc overview · T reset timer</div>}
     </div>
   );
 }

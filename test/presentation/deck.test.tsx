@@ -34,6 +34,13 @@ describe("/presentation renders the T-14 deck", () => {
     expect(screen.getByText(`${SLIDES.length} / ${SLIDES.length}`)).toBeInTheDocument();
   });
 
+  it("steps once per key press even when presses arrive faster than a re-render", async () => {
+    const user = userEvent.setup();
+    render(<PresentationPage />);
+    await user.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
+    expect(screen.getByText(`4 / ${SLIDES.length}`)).toBeInTheDocument();
+  });
+
   it("offers the PowerPoint from the path the app serves it at", () => {
     render(<PresentationPage />);
     const link = screen.getByRole("link", { name: /download \.pptx/i });
