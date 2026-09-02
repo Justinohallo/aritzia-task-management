@@ -3,21 +3,38 @@
 
     python3 .claude/skills/task-start/start.py T-04
     python3 .claude/skills/task-start/start.py T-04 AC-ADD-1,AC-ADD-2
+    python3 .claude/skills/task-start/start.py --dry-run T-04
+    python3 .claude/skills/task-start/start.py --dry-run all
 
 Validates first, claims second. Nothing is written to .current-task unless
 every check below passes, so a failed run leaves the session exactly as it
 found it:
 
+  0. docs/ passes scripts/spec-lint.py (T-16: the spec checks itself)
   1. no other task is already claimed (CLAUDE.md rule 2)
-  2. the task exists in docs/TASKS.md
-  3. every task in every earlier wave has a closed row in docs/LEDGER.md
+  2. the task exists in docs/TASKS.md, in the Sequence table and Task detail
+  3. every task in every earlier wave has a closed row in docs/LEDGER.md, and
+     so does every task this one's own "Depends on" cell names
   4. every criterion the task names exists in docs/ACCEPTANCE.md
+  5. every ADR the task's detail references exists
 
-The wave gate is deliberately wider than the task's own "Depends on" cell.
-TASKS.md rule 2 for concurrent agents is that a wave does not start until the
-previous wave is merged and main is green; with three agents running at once,
-a per-task dependency check would let an agent start against a half-built
-wave and not notice until two waves later.
+Check 3 is deliberately wider than the task's own "Depends on" cell. TASKS.md
+rule 2 for concurrent agents is that a wave does not start until the previous
+wave is merged and main is green; with three agents running at once, a
+per-task dependency check would let an agent start against a half-built wave
+and not notice until two waves later. The cell still holds inside a wave:
+wave 5 is a chain, and T-12 does not open until T-11 is closed (B-14).
+
+--dry-run <ID> runs every check and prints the same summary without claiming.
+Check 1 is reported rather than enforced, since a dry run claims nothing.
+
+--dry-run all walks every task in the plan, in wave order, against a
+simulated ledger that starts empty and closes each task the moment it opens.
+It fails on any task that could never open: a dependency in a later wave
+(the pre-ARCH-03 T-14 deadlock, B-03), a dependency the table does not list,
+a cycle inside a wave, a missing detail section, or a criterion or ADR that
+does not resolve. T-00 validated the gate by closing T-00 itself, the one
+input that could not trip it; this is the input that can.
 
 Stdlib only, to match scripts/ledger.py and scripts/task.sh.
 """
@@ -29,6 +46,7 @@ import sys
 TASKS_REL = "docs/TASKS.md"
 ACCEPTANCE_REL = "docs/ACCEPTANCE.md"
 LEDGER_REL = "docs/LEDGER.md"
+SPEC_LINT_REL = "scripts/spec-lint.py"
 LEDGER_TABLE_MARKER = "| date | session_id |"
 
 TASK_ID_RE = re.compile(r"\bT-\d+\b")
@@ -65,6 +83,11 @@ def normalise_task_id(raw):
             "%r is not a task id. Expected something like T-04." % raw
         )
     return tid
+
+
+def task_number(tid):
+    m = re.search(r"\d+", tid)
+    return int(m.group(0)) if m else 0
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +288,202 @@ def closed_tasks(ledger_md):
 
 
 # ---------------------------------------------------------------------------
+# Check 0: the spec checks itself
+# ---------------------------------------------------------------------------
+
+def spec_lint(root):
+    """Run scripts/spec-lint.py. Returns a one-line status; raises on findings."""
+    script = os.path.join(root, SPEC_LINT_REL)
+    if not os.path.exists(script):
+        return "%s not present; skipped" % SPEC_LINT_REL
+    proc = subprocess.run(
+        [sys.executable, script, "--quiet", "--root", root],
+        capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        raise StartError(
+            "%s failed on docs/, so the spec contradicts itself and nothing "
+            "should be built against it until the Architect resolves the "
+            "finding (docs/BLOCKERS.md):\n%s"
+            % (SPEC_LINT_REL, (proc.stdout + proc.stderr).rstrip())
+        )
+    return "docs/ passes %s" % SPEC_LINT_REL
+
+
+# ---------------------------------------------------------------------------
+# The gate, and the rest of the per-task validation
+# ---------------------------------------------------------------------------
+
+class Plan:
+    """docs/TASKS.md and docs/ACCEPTANCE.md, parsed once."""
+
+    def __init__(self, root):
+        self.root = root
+        self.tasks_md = read(os.path.join(root, TASKS_REL))
+        self.acceptance_md = read(os.path.join(root, ACCEPTANCE_REL))
+        self.rows = sequence_table(self.tasks_md)
+        self.index = acceptance_index(self.acceptance_md)
+        self.waved = any(wave_of(r) is not None for r in self.rows.values())
+
+
+class Summary:
+    """Everything the printed summary needs, plus the problems found."""
+
+    def __init__(self, task_id):
+        self.task_id = task_id
+        self.problems = []
+
+
+def gate(plan, task_id, closed):
+    """Who must be closed before task_id opens, and who is not.
+
+    Returns (blocked_wave, blocked_deps, concurrent, followers):
+      blocked_wave  earlier-wave tasks with no closed ledger row
+      blocked_deps  tasks in this task's own Depends on cell with no closed row
+                    (inside the wave, or in a plan without waves)
+      concurrent    same-wave tasks with no dependency either way
+      followers     same-wave tasks that depend on this one
+    """
+    row = plan.rows[task_id]
+    wave = wave_of(row)
+    deps = dependencies(row)
+    blocked_wave, concurrent, followers = [], [], []
+    if wave is None:
+        blocked_deps = [d for d in deps if d not in closed]
+    else:
+        for tid, other in plan.rows.items():
+            if tid == task_id:
+                continue
+            w = wave_of(other)
+            if w is None:
+                continue
+            if w < wave and tid not in closed:
+                blocked_wave.append(tid)
+            elif w == wave and tid not in deps:
+                (followers if task_id in dependencies(other) else concurrent).append(tid)
+        blocked_deps = [d for d in deps if d not in closed and d not in blocked_wave]
+    key = task_number
+    return (sorted(blocked_wave, key=key), blocked_deps,
+            sorted(concurrent, key=key), sorted(followers, key=key))
+
+
+def validate(plan, task_id, closed, supplied_criteria_arg=None, gate_checks=True):
+    """Checks 2-5 for one task. Problems are collected, not raised, so a
+    plan-wide dry run can report every defect at once. The plan-wide walk
+    does its own gate (check 3) against the simulated ledger and passes
+    gate_checks=False so a defect is reported once."""
+    s = Summary(task_id)
+    if task_id not in plan.rows:
+        s.problems.append(
+            "%s is not in the Sequence table of %s. If it is a new task, the "
+            "Architect adds it there first." % (task_id, TASKS_REL))
+        return s
+    row = plan.rows[task_id]
+    s.row = row
+    s.name = row.get("Task", task_id)
+    s.criteria_cell = row.get("Criteria", "")
+    s.estimate = row.get("Est.", "-")
+    s.wave = wave_of(row)
+    s.deps = dependencies(row)
+    s.section = detail_section(plan.tasks_md, task_id)
+    if s.section is None:
+        s.problems.append(
+            "%s has a row in the Sequence table of %s but no ### section under "
+            "Task detail. The spec is incomplete; stop and report it."
+            % (task_id, TASKS_REL))
+
+    # (3) the gate.
+    s.dep_status = [
+        "%s  %s" % (d, "closed (qa: %s)" % closed[d] if d in closed else "NOT CLOSED")
+        for d in s.deps
+    ] or ["—"]
+    s.blocked_wave, s.blocked_deps, s.concurrent, s.followers = gate(plan, task_id, closed)
+    unknown = [d for d in s.deps if d not in plan.rows]
+    if not gate_checks:
+        unknown, blocked_deps = [], []
+        s.blocked_wave = []
+    if unknown:
+        s.problems.append(
+            "%s depends on %s, which the Sequence table of %s does not list."
+            % (task_id, ", ".join(unknown), TASKS_REL))
+    if s.blocked_wave:
+        s.problems.append(
+            "%s is in wave %s, and %s %s not closed in %s (no row whose qa_result "
+            "is set).\nA wave does not start until the previous wave is merged and "
+            "main is green (TASKS.md,\nRules for concurrent agents #2) - otherwise "
+            "agents in this wave build against\ndifferent versions of the same "
+            "contract.\nClose them first, or have the Architect move %s in %s."
+            % (task_id, s.wave, ", ".join(s.blocked_wave),
+               "is" if len(s.blocked_wave) == 1 else "are", LEDGER_REL,
+               task_id, TASKS_REL))
+    if gate_checks:
+        blocked_deps = [d for d in s.blocked_deps if d not in unknown]
+    if blocked_deps:
+        if s.wave is None:
+            s.problems.append(
+                "%s depends on %s, which has no closed row in %s (a row whose "
+                "qa_result is not '-').\nFinish and close the dependency first, or "
+                "have the Architect change the order in %s."
+                % (task_id, ", ".join(blocked_deps), LEDGER_REL, TASKS_REL))
+        else:
+            later = [d for d in blocked_deps
+                     if (wave_of(plan.rows[d]) or 0) > s.wave]
+            same = [d for d in blocked_deps if d not in later]
+            if same:
+                s.problems.append(
+                    "%s depends on %s, in the same wave, and %s not closed in %s "
+                    "(no row whose qa_result is set).\nInside a wave the Depends "
+                    "on cell still holds (TASKS.md, Rules for concurrent agents "
+                    "#2): wave 5 is a chain, and T-12 does not open until T-11 is "
+                    "closed. Close %s first."
+                    % (task_id, ", ".join(same),
+                       "it is" if len(same) == 1 else "they are", LEDGER_REL,
+                       ", ".join(same)))
+            if later:
+                s.problems.append(
+                    "%s is in wave %s but depends on %s, in a later wave. It can "
+                    "never open: the wave gate holds the later task until this "
+                    "wave is closed, and this task cannot close until the later "
+                    "one has (the B-03 deadlock). The Architect moves one of them "
+                    "in %s."
+                    % (task_id, s.wave,
+                       ", ".join("%s (wave %s)" % (d, wave_of(plan.rows[d]))
+                                 for d in later),
+                       TASKS_REL))
+
+    # (4) every criterion must exist in ACCEPTANCE.md.
+    s.criteria = expand_criteria(s.criteria_cell)
+    missing = [c for c in s.criteria if c not in plan.index]
+    if missing:
+        s.problems.append(
+            "%s names %s in %s, which %s does not define. The spec contradicts "
+            "itself; stop and report it as a blocker."
+            % (task_id, ", ".join(missing), TASKS_REL, ACCEPTANCE_REL))
+
+    s.supplied = expand_criteria(supplied_criteria_arg) if supplied_criteria_arg else []
+    unknown_supplied = [c for c in s.supplied if c not in plan.index]
+    if unknown_supplied:
+        s.problems.append(
+            "%s is not defined in %s." % (", ".join(unknown_supplied), ACCEPTANCE_REL))
+    s.outside = [c for c in s.supplied if c not in s.criteria]
+
+    # (5) ADRs referenced by the task's section.
+    s.adrs = []
+    for m in ADR_RE.findall(s.section or ""):
+        path = "docs/adr/%s" % m
+        if path not in s.adrs:
+            s.adrs.append(path)
+    for path in s.adrs:
+        if not os.path.exists(os.path.join(plan.root, path)):
+            s.problems.append("%s references %s, which does not exist." % (task_id, path))
+
+    s.own = ownership_row(plan.tasks_md, task_id)
+    return s
+
+
+# ---------------------------------------------------------------------------
+# Output
+# ---------------------------------------------------------------------------
 
 def branch_hint(task_id, name):
     """feat/t-05-list, per TASKS.md rule 1 for concurrent agents."""
@@ -274,187 +493,61 @@ def branch_hint(task_id, name):
     return "%s/%s-%s" % (kind, task_id.lower(), first)
 
 
-def main(argv):
-    if not argv or argv[0] in ("-h", "--help"):
-        print(__doc__)
-        return 0 if argv else 2
-
-    task_id = normalise_task_id(argv[0])
-    supplied_criteria_arg = argv[1] if len(argv) > 1 else None
-    if len(argv) > 2:
-        raise StartError(
-            "expected at most two arguments: <TASK-ID> [AC-IDS]. Got %d." % len(argv)
-        )
-
-    root = repo_root(os.getcwd())
-    task_file = os.path.join(root, ".current-task")
-
-    # (a) one session, one task.
-    if os.path.exists(task_file):
-        with open(task_file, encoding="utf-8") as fh:
-            current = fh.read().strip()
-        if current and current != task_id:
-            raise StartError(
-                "this session already holds %s. CLAUDE.md rule 2 is one session to "
-                "one task, so that session totals are task totals.\n"
-                "Run /clear (or start a new session) and then /task-start %s."
-                % (current, task_id)
-            )
-
-    tasks_md = read(os.path.join(root, TASKS_REL))
-    acceptance_md = read(os.path.join(root, ACCEPTANCE_REL))
-    ledger_md = read(os.path.join(root, LEDGER_REL))
-
-    # (c) the task must exist, in both the table and the detail section.
-    rows = sequence_table(tasks_md)
-    if task_id not in rows:
-        raise StartError(
-            "%s is not in the Sequence table of %s. If it is a new task, the "
-            "Architect adds it there first." % (task_id, TASKS_REL)
-        )
-    row = rows[task_id]
-    section = detail_section(tasks_md, task_id)
-    if section is None:
-        raise StartError(
-            "%s has a row in the Sequence table of %s but no ### section under "
-            "Task detail. The spec is incomplete; stop and report it."
-            % (task_id, TASKS_REL)
-        )
-
-    name = row.get("Task", task_id)
-    criteria_cell = row.get("Criteria", "")
-    estimate = row.get("Est.", "-")
-    wave = wave_of(row)
-    deps = dependencies(row)
-
-    # (d) the gate. With waves, the unit is the wave: every task in an earlier
-    # wave must be closed, not merely the ones this task happens to name.
-    closed = closed_tasks(ledger_md)
-    dep_status = [
-        "%s  %s" % (d, "closed (qa: %s)" % closed[d] if d in closed else "NOT CLOSED")
-        for d in deps
-    ] or ["—"]
-
-    concurrent, blocked = [], []
-    if wave is None:
-        blocked = [d for d in deps if d not in closed]
-        gate = "dependency"
-    else:
-        gate = "wave"
-        for tid, other in rows.items():
-            if tid == task_id:
-                continue
-            w = wave_of(other)
-            if w is None:
-                continue
-            if w < wave and tid not in closed:
-                blocked.append(tid)
-            elif w == wave:
-                concurrent.append(tid)
-        blocked.sort()
-        concurrent.sort()
-    if blocked:
-        raise StartError(
-            "%s is in wave %s, and %s %s not closed in %s (no row whose qa_result "
-            "is set).\nA wave does not start until the previous wave is merged and main is green (TASKS.md,\nRules for concurrent agents #2) - otherwise agents in this wave build against\ndifferent versions of the same contract.\nClose them first, or have the Architect move "
-            "%s in %s."
-            % (task_id, wave if wave is not None else "?", ", ".join(blocked),
-               "is" if len(blocked) == 1 else "are", LEDGER_REL, task_id, TASKS_REL)
-            if gate == "wave" else
-            "%s depends on %s, which has no closed row in %s (a row whose "
-            "qa_result is not '-').\nFinish and close the dependency first, or "
-            "have the Architect change the order in %s."
-            % (task_id, ", ".join(blocked), LEDGER_REL, TASKS_REL)
-        )
-
-    # (f) every criterion must exist in ACCEPTANCE.md.
-    index = acceptance_index(acceptance_md)
-    criteria = expand_criteria(criteria_cell)
-    missing = [c for c in criteria if c not in index]
-    if missing:
-        raise StartError(
-            "%s names %s in %s, which %s does not define. The spec contradicts "
-            "itself; stop and report it as a blocker."
-            % (task_id, ", ".join(missing), TASKS_REL, ACCEPTANCE_REL)
-        )
-
-    supplied = expand_criteria(supplied_criteria_arg) if supplied_criteria_arg else []
-    unknown = [c for c in supplied if c not in index]
-    if unknown:
-        raise StartError(
-            "%s is not defined in %s." % (", ".join(unknown), ACCEPTANCE_REL)
-        )
-    outside = [c for c in supplied if c not in criteria]
-
-    # (e) ADRs referenced by the task's section.
-    adrs = []
-    for m in ADR_RE.findall(section):
-        path = "docs/adr/%s" % m
-        if path not in adrs:
-            adrs.append(path)
-    for path in adrs:
-        if not os.path.exists(os.path.join(root, path)):
-            raise StartError(
-                "%s references %s, which does not exist." % (task_id, path)
-            )
-
-    # (b) claim it. Everything above passed, so this cannot leave half a state.
-    cmd = [os.path.join(root, "scripts", "task.sh"), task_id]
-    if supplied_criteria_arg:
-        cmd.append(supplied_criteria_arg)
-    proc = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
-    # Trust the file, not the exit code: what matters is that the claim landed.
-    if not os.path.exists(task_file):
-        raise StartError(
-            "scripts/task.sh did not claim the task: %s%s"
-            % (proc.stdout.strip(), proc.stderr.strip())
-        )
-
-    # (g) the summary.
+def print_summary(plan, s, supplied_criteria_arg, dry_run, notes):
     out = sys.stdout
     w = out.write
+    task_id = s.task_id
     w("\n")
     w("=" * 72 + "\n")
-    w("  %s · %s\n" % (task_id, re.sub(r"\*\*", "", name)))
+    w("  %s · %s%s\n" % (task_id, re.sub(r"\*\*", "", s.name),
+                          "   [DRY RUN — nothing claimed]" if dry_run else ""))
     w("=" * 72 + "\n\n")
-    w("  estimate    %s\n" % estimate)
-    w("  criteria    %d (%s)\n" % (len(criteria), criteria_cell or "—"))
-    w("  depends on  %s\n" % "; ".join(dep_status))
-    if wave is not None:
-        w("  wave        %s%s\n" % (
-            wave,
-            "  — running concurrently with %s" % ", ".join(concurrent)
-            if concurrent else "  — solo"))
+    for note in notes:
+        w("  %s\n" % note)
+    if notes:
+        w("\n")
+    w("  estimate    %s\n" % s.estimate)
+    w("  criteria    %d (%s)\n" % (len(s.criteria), s.criteria_cell or "—"))
+    w("  depends on  %s\n" % "; ".join(s.dep_status))
+    if s.wave is not None:
+        parallel = []
+        if s.concurrent:
+            parallel.append("running concurrently with %s" % ", ".join(s.concurrent))
+        if s.followers:
+            parallel.append("%s wait%s for this task to close"
+                            % (", ".join(s.followers),
+                               "s" if len(s.followers) == 1 else ""))
+        w("  wave        %s  — %s\n" % (s.wave, "; ".join(parallel) or "solo"))
         w("  branch      %s  (off the latest main, never off another agent)\n"
-          % branch_hint(task_id, name))
+          % branch_hint(task_id, s.name))
     if supplied_criteria_arg:
         w("  claimed as  %s\n" % supplied_criteria_arg)
-        if outside:
+        if s.outside:
             w("  note        %s is not in this task's criteria in %s\n"
-              % (", ".join(outside), TASKS_REL))
+              % (", ".join(s.outside), TASKS_REL))
     w("\n")
 
-    dw = done_when(section)
+    dw = done_when(s.section)
     w("  DONE WHEN\n")
     w("  %s\n\n" % (dw or "not stated in %s — the task has no exit condition." % TASKS_REL))
 
-    own = ownership_row(tasks_md, task_id)
-    if own is not None:
+    if s.own is not None:
         w("  FILES THIS TASK OWNS (one writer per path, per wave)\n")
-        w("  writes  %s\n" % (own.get("Writes") or "—"))
-        reads = own.get("Reads (never writes)") or own.get("Reads") or "—"
+        w("  writes  %s\n" % (s.own.get("Writes") or "—"))
+        reads = s.own.get("Reads (never writes)") or s.own.get("Reads") or "—"
         w("  reads   %s\n" % reads)
         w("  Writing a file this task does not own is a spec gap, not a\n")
         w("  judgement call: stop and write a blocker. /task-close checks this.\n\n")
-    elif wave is not None:
+    elif s.wave is not None:
         w("  FILES THIS TASK OWNS\n")
-        w("  no File ownership row for %s in %s — ask the Architect for one\n"
+        w("  no File ownership row for %s in %s — this task writes no\n"
           % (task_id, TASKS_REL))
-        w("  before writing, or three concurrent branches will collide.\n\n")
+        w("  application code. If it turns out to need to, that is a spec gap:\n")
+        w("  ask the Architect for a row before writing, or /task-close fails.\n\n")
 
     w("  ADRs TO READ IN FULL BEFORE WRITING ANYTHING\n")
-    if adrs:
-        for path in adrs:
+    if s.adrs:
+        for path in s.adrs:
             w("  - %s\n" % path)
     else:
         w("  - none referenced by this task\n")
@@ -463,19 +556,216 @@ def main(argv):
     w("-" * 72 + "\n")
     w("TASK DETAIL (%s)\n" % TASKS_REL)
     w("-" * 72 + "\n")
-    w(section + "\n\n")
+    w(s.section + "\n\n")
 
     w("-" * 72 + "\n")
     w("ACCEPTANCE CRITERIA (%s)\n" % ACCEPTANCE_REL)
     w("-" * 72 + "\n")
-    if not criteria:
+    if not s.criteria:
         w("This task carries no acceptance criteria.\n")
-    for cid in criteria:
-        title, block = index[cid]
+    for cid in s.criteria:
+        title, block = plan.index[cid]
         w("\n%s — %s\n" % (cid, title))
         for line in block.split("\n"):
             w("    %s\n" % line)
     w("\n")
+
+
+# ---------------------------------------------------------------------------
+# --dry-run all: the plan against a simulated ledger
+# ---------------------------------------------------------------------------
+
+def find_cycle(rows, members, start):
+    """A dependency path from start back to itself through members, as a
+    list of ids ending in start again, or None if start is not on a cycle."""
+    stack = [(start, [start])]
+    seen = set()
+    while stack:
+        tid, path = stack.pop()
+        for d in dependencies(rows[tid]):
+            if d == start:
+                return path + [start]
+            if d in members and d not in seen:
+                seen.add(d)
+                stack.append((d, path + [d]))
+    return None
+
+
+def dry_run_all(plan, lint_status):
+    """Walk every task in wave order. Returns the number of tasks that could
+    never open, after printing the walk."""
+    rows = plan.rows
+    groups = {}
+    for tid, row in rows.items():
+        groups.setdefault(wave_of(row) if plan.waved else 0, []).append(tid)
+    unwaved = groups.pop(None, [])
+    for tid in unwaved:
+        groups.setdefault(-1, []).append(tid)
+
+    closed = {}
+    problems = {}   # tid -> [reason]
+    lines = []
+
+    def fail(tid, reason):
+        problems.setdefault(tid, []).append(reason)
+
+    for wave in sorted(groups):
+        pending = sorted(groups[wave], key=task_number)
+        label = "wave %s" % wave if wave >= 0 else "no wave"
+        first = True
+        while pending:
+            progressed = False
+            for tid in list(pending):
+                deps = dependencies(rows[tid])
+                unknown = [d for d in deps if d not in rows]
+                later = [d for d in deps if d in rows
+                         and (wave_of(rows[d]) if plan.waved else 0) is not None
+                         and (wave_of(rows[d]) or 0) > wave]
+                waiting = [d for d in deps if d in rows and d not in closed
+                           and d not in later]
+                if unknown:
+                    fail(tid, "depends on %s, which the Sequence table does not list"
+                         % ", ".join(unknown))
+                if later:
+                    fail(tid, "depends on %s in a later wave: it can never open "
+                         "(the B-03 deadlock)"
+                         % ", ".join("%s (wave %s)" % (d, wave_of(rows[d])) for d in later))
+                if unknown or later:
+                    how = "NEVER OPENS"
+                elif waiting:
+                    continue
+                else:
+                    how = "opens" if not deps else "after %s" % ", ".join(deps)
+                lines.append((label if first else "", tid, how))
+                first = False
+                closed[tid] = "simulated"
+                pending.remove(tid)
+                progressed = True
+            if not progressed:
+                # Every remaining task waits on another remaining task: either
+                # it sits on a cycle, or it is downstream of one.
+                for tid in pending:
+                    cycle = find_cycle(rows, pending, tid)
+                    if cycle:
+                        fail(tid, "sits on a dependency cycle inside %s: %s"
+                             % (label, " → ".join(cycle)))
+                    else:
+                        waits = [d for d in dependencies(rows[tid]) if d in pending]
+                        fail(tid, "waits on %s, which never opens" % ", ".join(waits))
+                    lines.append((label if first else "", tid, "NEVER OPENS"))
+                    first = False
+                    closed[tid] = "simulated"
+                pending = []
+
+    # Static validation of every task: detail section, criteria, ADRs. The
+    # gate was walked above, so it is not re-checked here.
+    for tid in rows:
+        s = validate(plan, tid, closed, gate_checks=False)
+        for p in s.problems:
+            fail(tid, p.split("\n")[0])
+
+    w = sys.stdout.write
+    w("\ntask-start --dry-run all · %s\n" % TASKS_REL)
+    w("  %s\n" % lint_status)
+    w("  simulated ledger starts empty; each task closes the moment it opens\n\n")
+    for label, tid, how in lines:
+        lane = ownership_row(plan.tasks_md, tid)
+        lane_txt = ((lane.get("Writes") or "—") if lane else "no ownership row")
+        if len(lane_txt) > 44:
+            lane_txt = lane_txt[:41] + "..."
+        flag = "  !!" if tid in problems else ""
+        w("  %-8s %-6s %-22s %s%s\n" % (label, tid, how, lane_txt, flag))
+    w("\n")
+    if problems:
+        w("  %d task(s) could never open:\n" % len(problems))
+        for tid in sorted(problems, key=task_number):
+            for reason in problems[tid]:
+                w("    %-6s %s\n" % (tid, reason))
+        w("\n")
+    else:
+        w("  %d tasks in %d wave(s): every task can open in plan order.\n\n"
+          % (len(rows), len(groups)))
+    return len(problems)
+
+
+# ---------------------------------------------------------------------------
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help"):
+        print(__doc__)
+        return 0 if argv else 2
+
+    dry_run, root = False, None
+    positional = []
+    args = list(argv)
+    while args:
+        a = args.pop(0)
+        if a == "--dry-run":
+            dry_run = True
+        elif a == "--root":
+            if not args:
+                raise StartError("--root needs a directory")
+            root = args.pop(0)
+        elif a.startswith("-"):
+            raise StartError("unknown option %s" % a)
+        else:
+            positional.append(a)
+    if not positional:
+        raise StartError("expected a task id: start.py [--dry-run] <TASK-ID|all> [AC-IDS]")
+    if len(positional) > 2:
+        raise StartError(
+            "expected at most two arguments: <TASK-ID> [AC-IDS]. Got %d." % len(positional))
+    root = os.path.abspath(root) if root else repo_root(os.getcwd())
+
+    if positional[0].strip().lower() == "all":
+        if not dry_run:
+            raise StartError("'all' is only meaningful with --dry-run; a session claims one task.")
+        lint_status = spec_lint(root)
+        plan = Plan(root)
+        failed = dry_run_all(plan, lint_status)
+        return 1 if failed else 0
+
+    task_id = normalise_task_id(positional[0])
+    supplied_criteria_arg = positional[1] if len(positional) > 1 else None
+    task_file = os.path.join(root, ".current-task")
+    notes = []
+
+    # (0) the spec checks itself.
+    notes.append(spec_lint(root))
+
+    # (1) one session, one task.
+    if os.path.exists(task_file):
+        with open(task_file, encoding="utf-8") as fh:
+            current = fh.read().strip()
+        if current and current != task_id:
+            if not dry_run:
+                raise StartError(
+                    "this session already holds %s. CLAUDE.md rule 2 is one session to "
+                    "one task, so that session totals are task totals.\n"
+                    "Run /clear (or start a new session) and then /task-start %s."
+                    % (current, task_id))
+            notes.append("this session holds %s; a real /task-start %s would refuse "
+                         "(rule 2) until /clear" % (current, task_id))
+
+    plan = Plan(root)
+    closed = closed_tasks(read(os.path.join(root, LEDGER_REL)))
+    s = validate(plan, task_id, closed, supplied_criteria_arg)
+    if s.problems:
+        raise StartError("\n\n".join(s.problems))
+
+    if not dry_run:
+        # (6) claim it. Everything above passed, so this cannot leave half a state.
+        cmd = [os.path.join(root, "scripts", "task.sh"), task_id]
+        if supplied_criteria_arg:
+            cmd.append(supplied_criteria_arg)
+        proc = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
+        # Trust the file, not the exit code: what matters is that the claim landed.
+        if not os.path.exists(task_file):
+            raise StartError(
+                "scripts/task.sh did not claim the task: %s%s"
+                % (proc.stdout.strip(), proc.stderr.strip()))
+
+    print_summary(plan, s, supplied_criteria_arg, dry_run, notes)
     return 0
 
 
