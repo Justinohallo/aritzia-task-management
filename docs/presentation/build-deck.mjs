@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 /*
- * Renders slides.js to aritzia-task-management.pptx with pptxgenjs.
+ * Renders app/presentation/slides.ts to public/presentation/
+ * aritzia-task-management.pptx with pptxgenjs.
  *
  * pptxgenjs is not a dependency of the application (CLAUDE.md rule 4 covers
  * runtime dependencies; this is a docs tool), so it is not in package.json.
- * Install it without recording it, then run from the repo root:
+ * Install it without recording it, then run from the repo root on Node 22.18
+ * or later, which strips the types from slides.ts on import:
  *
  *   npm install --no-save pptxgenjs@3
  *   node docs/presentation/build-deck.mjs
  *
- * The output is committed beside index.html so the "Download .pptx" link
- * works from a file:// open of the deck with no build step.
+ * The output is committed under public/ so /presentation's "Download .pptx"
+ * button serves it with no build step.
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import PptxGenJS from "pptxgenjs";
-import DECK from "./slides.js";
-
-const { slides } = DECK;
+import { SLIDES as slides } from "../../app/presentation/slides.ts";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const INK = "1A1A1A", INK2 = "555555", INK3 = "8A8A8A", PAPER2 = "F5F5F5", LINE = "D0D0D0", ACCENT = "E8630A", WHITE = "FFFFFF", DARK = "1A1A1A", ONDARK2 = "B8B8B8";
@@ -192,5 +192,5 @@ slides.forEach((s, i) => {
   if (s.notes) slide.addNotes(s.notes);
 });
 
-const out = path.join(__dirname, "aritzia-task-management.pptx");
+const out = path.join(__dirname, "..", "..", "public", "presentation", "aritzia-task-management.pptx");
 pres.writeFile({ fileName: out }).then(() => console.log("wrote", out));

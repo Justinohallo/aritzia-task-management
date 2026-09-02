@@ -1,16 +1,22 @@
-# The presentation (T-14)
+# The presentation (T-14, served by T-18)
 
 15–20 minutes, engineering audience, built from the specs rather than from
-scratch. One set of slides, two renderings:
+scratch. One set of slides, two renderings, both served by the app:
 
-| File | What it is |
+| Where | What it is |
 |---|---|
-| `index.html` | **The presented version.** Open it in a browser; no server, no build. |
-| `aritzia-task-management.pptx` | **The download.** The same deck as PowerPoint, with speaker notes. Linked from the HTML deck's top-right button. |
-| `slides.js` | The deck as data: every slide, its speaker notes, and its time budget. Both renderings read this file, so an edit here changes both. |
-| `build-deck.mjs` | Renders `slides.js` to the `.pptx` with pptxgenjs. |
+| `/presentation` on the deployed app | **The presented version.** `app/presentation/page.tsx` renders the deck in the browser; it sits outside the protected layout, so no login is needed. |
+| `/presentation/aritzia-task-management.pptx` | **The download.** The same deck as PowerPoint with speaker notes, committed at `public/presentation/` and linked from the page's top-right button. |
+| `app/presentation/slides.ts` | The deck as data: every slide, its speaker notes, and its time budget. Both renderings read this file, so an edit here changes both. |
+| `app/presentation/deck.tsx` | The client component that renders the slides, with its own stylesheet `deck.module.css`. |
+| `build-deck.mjs` (this folder) | Renders `slides.ts` to the `.pptx` with pptxgenjs. |
 
-## Presenting from `index.html`
+Q-2 in `PROJECT.md` defaulted to keeping the slides out of the repository.
+The operator reversed that on 2026-09-02: the deck is presented from the
+live URL, so it ships with the app (`B-26` asks the Architect to restate
+Q-2 and give the route a criterion).
+
+## Presenting from `/presentation`
 
 | Key | Does |
 |---|---|
@@ -21,13 +27,15 @@ scratch. One set of slides, two renderings:
 | `Esc` | overview of every slide; click one to jump to it |
 | `T` | reset the elapsed-time clock, top right |
 
-The URL hash carries the slide number (`index.html#7`), so a link lands on
-a slide. Printing produces one slide per page.
+The URL hash carries the slide number (`/presentation#7`), so a link lands
+on a slide and the browser's back button steps back through the slides
+visited. Printing produces one slide per page.
 
 ## Structure and timing
 
 The six sections `docs/TASKS.md` §T-14 requires, in that order, with a
-running total of 19¾ minutes across 19 slides:
+running total of 19¾ minutes across 19 slides (a test holds the total
+inside the brief's 15–20 minute window):
 
 | # | Section | Slides | Min |
 |---|---|---|---|
@@ -57,24 +65,20 @@ more within ten seconds so the fixed-window limiter (5 requests per 10 s,
 totals and the QA result. Both are on the section-5 slides and quoted from
 `docs/LEDGER.md` and `docs/ACCEPTANCE.md` as of `main` `fb7e61f`
 (2026-09-02). After T-15 closes, re-derive them and edit the values in
-`slides.js` (the `stats` and `chart` slides):
+`app/presentation/slides.ts` (the `stats` and `chart` slides), then rebuild
+the `.pptx` as below.
 
-```bash
-python3 - <<'EOF'
-rows = [l for l in open("docs/LEDGER.md") if l.startswith("| 2026-")]
-cells = [[c.strip() for c in r.split("|")[1:-1]] for r in rows]
-def f(x):
-    try: return float(x)
-    except ValueError: return 0.0
-print("sessions", len(cells), "total $", round(sum(f(c[11]) for c in cells), 2))
-for c in cells: print(c[2], c[11])
-EOF
-```
+To re-derive the totals, sum the `api_cost_usd` column of the ledger rows
+(every line of `docs/LEDGER.md` that starts with `| 2026-`); the per-task
+bar chart takes each Builder row's value, with T-01 quoted net of the ~$70
+write loop ARCH-04 describes.
 
 ## Rebuilding the `.pptx`
 
 pptxgenjs is a docs tool, not an application dependency, so it is not in
-`package.json`. Install it without recording it, then run from the repo root:
+`package.json`. Install it without recording it, then run from the repo
+root on Node 22.18 or later (it imports `slides.ts` directly and relies on
+Node's type stripping):
 
 ```bash
 npm install --no-save pptxgenjs@3
@@ -82,5 +86,4 @@ node docs/presentation/build-deck.mjs
 ```
 
 `--no-save` leaves `package.json` and the lockfile untouched. Commit the
-regenerated `.pptx` beside `index.html`; the download button is a relative
-link and works from a `file://` open with no server.
+regenerated file at `public/presentation/aritzia-task-management.pptx`.
