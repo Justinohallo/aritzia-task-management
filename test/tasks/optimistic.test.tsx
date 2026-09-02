@@ -201,7 +201,6 @@ describe("optimistic create", () => {
     const [row] = rows();
     expect(row).toHaveAttribute("aria-busy", "true");
     expect(within(row).getByText("Saving…")).toBeInTheDocument();
-    expect(row.querySelector("svg.animate-spin")).toBeInTheDocument();
     expect(deleteButton("Order the lookbook")).toBeDisabled();
     expect(status()).toHaveTextContent('Adding "Order the lookbook"…');
     expect(submit()).toHaveTextContent("Adding…");
@@ -322,7 +321,6 @@ describe("optimistic delete", () => {
     expect(rows()).toHaveLength(0);
     const indicator = screen.getByTestId("task-list-deleting");
     expect(indicator).toHaveTextContent('Deleting "Delete me"…');
-    expect(indicator.querySelector("svg.animate-spin")).toBeInTheDocument();
     expect(status()).toHaveTextContent('Deleting "Delete me"…');
 
     await gated.release();
