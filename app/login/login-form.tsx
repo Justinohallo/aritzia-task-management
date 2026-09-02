@@ -64,6 +64,7 @@ export function LoginForm() {
           type="text"
           autoComplete="username"
           autoFocus
+          className="pointer-coarse:h-11"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           aria-invalid={invalid("username")}
@@ -79,6 +80,7 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           minLength={MIN_PASSWORD_LENGTH}
+          className="pointer-coarse:h-11"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           aria-invalid={invalid("password")}
@@ -87,7 +89,7 @@ export function LoginForm() {
         <p className="text-xs text-muted-foreground">{CREDENTIAL_RULE}</p>
       </div>
 
-      <Button type="submit" className="self-start">
+      <Button type="submit" className="self-start pointer-coarse:h-11 pointer-coarse:px-6">
         Log in
       </Button>
     </form>
