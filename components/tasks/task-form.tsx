@@ -20,6 +20,10 @@
  *
  * `app/(protected)/tasks/page.tsx` imports `{ TaskForm }` from here; the
  * export name is the T-01 contract.
+ *
+ * Wave 4 (T-10, `AC-UI-2`): on a coarse pointer the fields and the submit
+ * control grow to 44px; with a mouse they keep the primitive's default
+ * height. Layout classes only — the semantics are T-09's.
  */
 import { Loader2Icon } from "lucide-react";
 import { useId, useRef, useState, type FormEvent } from "react";
@@ -120,6 +124,7 @@ export function TaskForm() {
             autoComplete="off"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            className="pointer-coarse:h-11"
             aria-invalid={invalid("title")}
             aria-describedby={describedBy("title")}
           />
@@ -138,6 +143,7 @@ export function TaskForm() {
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
+            className="pointer-coarse:h-11"
             aria-invalid={invalid("dueDate")}
             aria-describedby={describedBy("dueDate")}
           />
@@ -148,7 +154,7 @@ export function TaskForm() {
           ) : null}
         </div>
 
-        <Button type="submit" className="self-start" disabled={submitting} aria-describedby={failure ? failureId : undefined}>
+        <Button type="submit" className="self-start pointer-coarse:h-11 pointer-coarse:px-6" disabled={submitting} aria-describedby={failure ? failureId : undefined}>
           {submitting ? (
             <>
               <Loader2Icon aria-hidden="true" className="animate-spin" />
