@@ -4,6 +4,15 @@ import { axe } from "jest-axe";
 import TasksPage from "@/app/(protected)/tasks/page";
 import { TasksProvider } from "@/lib/tasks/provider";
 
+// The list reads the filter from the URL (T-05, `AC-FILT-4`); outside the App
+// Router those hooks need a stand-in.
+const mockRouter = { replace: jest.fn(), push: jest.fn(), prefetch: jest.fn(), back: jest.fn() };
+jest.mock("next/navigation", () => ({
+  useRouter: () => mockRouter,
+  usePathname: () => "/tasks",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 /**
  * The one trivial test T-01 owes: the toolchain (Jest, RTL, jest-axe) runs
  * against the page shell, and the shell renders the form slot above the
