@@ -2,6 +2,7 @@ import { LiveRegion } from "@/components/ui/live-region";
 import { RequireAuth } from "@/lib/auth/guards";
 import { AuthProvider } from "@/lib/auth/provider";
 import { SessionBar } from "@/lib/auth/session-bar";
+import { TasksProvider } from "@/lib/tasks/provider";
 
 /**
  * The protected layout — T-02 (ADR-0001, ADR-0005; `AC-AUTH-4..7`,
@@ -15,19 +16,25 @@ import { SessionBar } from "@/lib/auth/session-bar";
  *
  * `<LiveRegion />` is mounted here, once, inside the guard: it is the one
  * announcement mechanism for every later task (T-01 contract, B-07).
+ *
+ * `<TasksProvider>` is mounted here, once, inside the guard (B-20): the
+ * list is per-app, not per-page, and it is a client component so it sits
+ * inside the auth guard (`AC-STATE-1`).
  */
 export default function ProtectedLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <AuthProvider>
       <RequireAuth>
-        <header className="border-b">
-          <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4 p-4 sm:px-6">
-            <p className="font-semibold tracking-tight">Aritzia Task Management</p>
-            <SessionBar />
-          </div>
-        </header>
-        <LiveRegion />
-        {children}
+        <TasksProvider>
+          <header className="border-b">
+            <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4 p-4 sm:px-6">
+              <p className="font-semibold tracking-tight">Aritzia Task Management</p>
+              <SessionBar />
+            </div>
+          </header>
+          <LiveRegion />
+          {children}
+        </TasksProvider>
       </RequireAuth>
     </AuthProvider>
   );
