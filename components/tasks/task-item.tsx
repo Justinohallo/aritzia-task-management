@@ -17,6 +17,10 @@
  * delete control disabled until the server has the record (`AC-API-11`).
  * The word, not the spinner, is what assistive technology reads. The row
  * itself never talks to the network; `task-list.tsx` runs the mutations.
+ *
+ * Wave 4 (T-09): `data-task-id` on the row and `data-control` on its two
+ * controls are how `task-list.tsx` finds where to put keyboard focus when
+ * a row leaves the view (`AC-A11Y-4`). They carry no styling.
  */
 import { AlertCircleIcon, Loader2Icon, Trash2Icon } from "lucide-react";
 import { useId } from "react";
@@ -59,6 +63,7 @@ export function TaskItem({ task, onCompletedChange, onDelete }: TaskItemProps) {
   return (
     <li
       className={cn("flex items-start gap-3 rounded-md border bg-card p-3 text-card-foreground", task.completed && "bg-muted/40")}
+      data-task-id={task.id}
       data-completed={task.completed}
       data-overdue={overdue}
       data-sync={task.sync}
@@ -66,6 +71,7 @@ export function TaskItem({ task, onCompletedChange, onDelete }: TaskItemProps) {
     >
       <Checkbox
         id={`${id}-completed`}
+        data-control="completed"
         className="mt-1"
         checked={task.completed}
         aria-labelledby={titleId}
@@ -102,6 +108,7 @@ export function TaskItem({ task, onCompletedChange, onDelete }: TaskItemProps) {
         type="button"
         variant="ghost"
         size="icon-sm"
+        data-control="delete"
         aria-label={`Delete ${task.title}`}
         title={syncing ? "Saving…" : "Delete"}
         disabled={syncing}
