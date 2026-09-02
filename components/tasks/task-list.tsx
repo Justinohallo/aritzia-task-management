@@ -24,12 +24,21 @@
  * says the same. A final failure restores the row — its position follows
  * from the derived order — and its message is shown here too.
  *
+ * Wave 4 (T-09): a row that leaves the view — deleted, or completed under
+ * a filter that hides it — takes the keyboard user's focus with it, and the
+ * browser drops it on `<body>`: not trapped, but lost, and the next Tab
+ * starts from the top of the page. Before the row goes, the neighbouring
+ * row's matching control is chosen; after the render that removes the row,
+ * focus lands there, or on the active filter when no row is left
+ * (`AC-A11Y-4`). Focus is moved only when it was inside the leaving row, so
+ * a pointer user's focus is left where it is.
+ *
  * `app/(protected)/tasks/page.tsx` imports `{ TaskList }` from here; the
  * export name is the T-01 contract. `useSearchParams` needs a Suspense
  * boundary above it for static rendering, so this file supplies its own.
  */
 import { Loader2Icon } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { TaskFilters, FILTER_LABELS, matchesFilter, useTaskFilter } from "@/components/tasks/task-filters";
 import { TaskItem } from "@/components/tasks/task-item";
@@ -44,6 +53,27 @@ export function sortTasks(tasks: readonly Task[]): Task[] {
   return [...tasks].sort(
     (a, b) => a.dueDate.localeCompare(b.dueDate) || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id),
   );
+}
+
+/** The two focusable controls in a row, by their `data-control` name (`task-item.tsx`). */
+type RowControl = "completed" | "delete";
+
+/** Where focus should go once a row has left the view. */
+interface FocusIntent {
+  /** The row that is leaving; the intent is spent once it is gone. */
+  leavingId: string;
+  /** The neighbouring row to land on, or `null` when there is none. */
+  neighbourId: string | null;
+  control: RowControl;
+}
+
+/**
+ * The row to land on when `index` leaves `visible`: the next one, else the
+ * previous — so repeated Delete walks down the list, and the last row
+ * hands back to the one above it.
+ */
+export function neighbourOf(visible: readonly Task[], index: number): Task | null {
+  return visible[index + 1] ?? visible[index - 1] ?? null;
 }
 
 export function TaskList() {
@@ -70,37 +100,82 @@ function TaskListBody() {
   const [deleting, setDeleting] = useState<readonly Task[]>([]);
   const [failure, setFailure] = useState<string | null>(null);
 
+  const visible = sortTasks(tasks.filter((task) => matchesFilter(filter, task.completed)));
+
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const focusIntent = useRef<FocusIntent | null>(null);
+
+  /**
+   * Record where focus should go when `task` is about to leave the view.
+   * Nothing is moved yet: the row is still on screen, and the effect
+   * below moves focus once the render that removes it has committed.
+   */
+  const planFocus = useCallback(
+    (task: Task, control: RowControl) => {
+      const root = sectionRef.current;
+      const row = root?.querySelector<HTMLElement>(`[data-task-id="${task.id}"]`);
+      // Only a keyboard user's focus is on the row; leave a pointer user's alone.
+      if (!row || !row.contains(document.activeElement)) return;
+      const index = visible.findIndex((t) => t.id === task.id);
+      focusIntent.current = { leavingId: task.id, neighbourId: neighbourOf(visible, index)?.id ?? null, control };
+    },
+    [visible],
+  );
+
+  useEffect(() => {
+    const intent = focusIntent.current;
+    const root = sectionRef.current;
+    if (!intent || !root) return;
+    // Still on screen — a delete that was declined, or a filter change
+    // that kept it. The intent stands until the row actually goes.
+    if (root.querySelector(`[data-task-id="${intent.leavingId}"]`)) return;
+    focusIntent.current = null;
+
+    const neighbour =
+      intent.neighbourId === null
+        ? null
+        : root.querySelector<HTMLElement>(`[data-task-id="${intent.neighbourId}"] [data-control="${intent.control}"]`);
+    // A neighbour's delete may be disabled while its own create is in
+    // flight (`AC-API-11`); its checkbox never is.
+    const target =
+      neighbour && !neighbour.matches(":disabled")
+        ? neighbour
+        : root.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]');
+    target?.focus();
+  });
+
   const onCompletedChange = useCallback(
     (task: Task, completed: boolean) => {
+      // Under a filter the row leaves the view; say so, or a screen-reader
+      // user is left on a control that has vanished (`AC-FILT-6`), and
+      // move focus with it (`AC-A11Y-4`).
+      const leavesView = !matchesFilter(filter, completed);
+      if (leavesView) planFocus(task, "completed");
       dispatch({ type: "setCompleted", id: task.id, completed });
       const state = completed ? "complete" : "incomplete";
-      // Under a filter the row leaves the view; say so, or a screen-reader
-      // user is left on a control that has vanished (`AC-FILT-6`).
-      const leavesView = !matchesFilter(filter, completed);
       announce(
         leavesView
           ? `${task.title} marked ${state} and removed from the ${FILTER_LABELS[filter]} list.`
           : `${task.title} marked ${state}.`,
       );
     },
-    [announce, dispatch, filter],
+    [announce, dispatch, filter, planFocus],
   );
 
   const onDelete = useCallback(
     async (task: Task) => {
       setFailure(null);
+      planFocus(task, "delete");
       setDeleting((current) => [...current, task]);
       const outcome = await deleteTask(task);
       setDeleting((current) => current.filter((t) => t.id !== task.id));
       if (!outcome.ok) setFailure(outcome.failure.message);
     },
-    [deleteTask],
+    [deleteTask, planFocus],
   );
 
-  const visible = sortTasks(tasks.filter((task) => matchesFilter(filter, task.completed)));
-
   return (
-    <>
+    <div ref={sectionRef} className="contents">
       <TaskFilters value={filter} onChange={setFilter} />
       {deleting.length > 0 ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="task-list-deleting">
@@ -126,7 +201,7 @@ function TaskListBody() {
           ))}
         </ul>
       )}
-    </>
+    </div>
   );
 }
 
