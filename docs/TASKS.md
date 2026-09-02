@@ -149,6 +149,7 @@ found a spec gap and writes a blocker.**
 | **T-09** | `components/tasks/**` (semantics: labels, `aria-*`, live regions) | — |
 | **T-10** | `app/(protected)/**` layout wrappers; `components/tasks/**` (layout classes only — T-09 merges first, T-10 rebases) | — |
 | **T-11** | `**/*.test.*`, `jest.config` thresholds | — |
+| **T-12** | for one commit, and nothing else in it: `app/login/login-form.tsx` and `lib/auth/session-bar.tsx` (the `B-22` touch-target classes) | everything |
 | **T-14** | `docs/presentation/**` | all specs, `LEDGER.md` |
 
 Three paths are contended and are handled by rule, not by hope:
@@ -612,9 +613,12 @@ Audit every criterion ID for a test that names it. Fill gaps. Enforce coverage
 thresholds on state, API-client, and validation modules. Remove any
 snapshot-only coverage.
 
-**Done when:** no criterion in `ACCEPTANCE.md` is marked `☑` without a named
-test, the seven criteria no Jest test can prove are `◉` with their procedure
-named, and `◐` is used honestly for anything implemented but unproven.
+**Done when:** every criterion has a test that names it, except the seven no
+Jest test can prove, whose manual procedure is written where T-13 can read it
+(a test-file header or `scripts/*.md`). T-11 writes no status mark:
+`ACCEPTANCE.md` is a spec file and the marks are T-13's (*ARCH-05*; the
+earlier wording read as if T-11 marked them, and a Builder never edits
+`ACCEPTANCE.md`).
 
 ### T-12 · Promote and verify the deployment
 `AC-DEP-1` · 30m · **wave 5, solo**
@@ -625,13 +629,39 @@ present in the production environment and absent from the bundle
 (`AC-API-3` again, this time against the deployed artifact). Verify the full
 path on a real phone-width viewport, not a desktop devtools emulation.
 
+- **The `B-22` touch-target commit** (assigned here by ARCH-05): the four
+  T-02 controls that fail `AC-UI-2` under coarse-pointer emulation take the
+  class T-10 used elsewhere — `pointer-coarse:h-11` on the username and
+  password inputs and the Log in button in `app/login/login-form.tsx`
+  (`pointer-coarse:px-6` on the button), `pointer-coarse:h-11
+  pointer-coarse:px-4` on the Log out button in `lib/auth/session-bar.tsx`.
+  One commit, `[AC-UI-2]`, nothing else in it; both files are in this task's
+  ownership row for that commit only. It lands here rather than in a new task
+  because T-12 is the session that promotes the build T-13 verifies against,
+  so the fix is deployed before T-13 opens and T-13 can mark `AC-UI-2` `◉`
+  for every control, not only the task-page ones. Re-run
+  `scripts/responsive-check.mjs` and confirm it prints no failures before
+  promoting.
+
 ### T-13 · QA pass
 verification only · 45m · **wave 5, solo** — fresh session, no shared context
 
 Independent walk of all 79 criteria against the deployed build. Fresh session —
 QA that shares context with the Builder is not independent. Findings are
 written to [`BLOCKERS.md`](BLOCKERS.md), and the Architect turns them into
-tasks; the QA session writes no application code and no spec.
+tasks; the QA session writes no application code.
+
+**T-13 writes the status marks in `ACCEPTANCE.md`** (*ARCH-05*). Until T-13
+no criterion carries a `☐`/`◐`/`☑`/`◉` mark, only the legend; nothing
+earlier in the plan is allowed to mark one, and T-11's done-when has been
+reworded to say so. T-13 marks each criterion `☑` only with the named test
+beside it, `◉` only for the seven the legend names and only with the
+procedure, viewport or device, and date beside it, and `◐` for anything
+implemented but unproven; `AC-UI-2` is marked `◉` against the deployed build
+that carries the `B-22` commit. This is the one spec edit a QA session
+makes, on the same footing as appending to `BLOCKERS.md`, and it is committed
+as `docs: T-13 ACCEPTANCE.md status marks`; `CLAUDE.md` §Roles says the same.
+A mark with no test or procedure next to it is a `B-` row, not a `☑`.
 
 ### T-14 · Presentation
 120m · **wave 5**, parallel with the T-11 → T-12 → T-13 chain

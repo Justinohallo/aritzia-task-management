@@ -144,6 +144,13 @@ measures nothing is worse evidence than an empty one that says why. So:
 - If a wave is run with the diff actually read, count as `OPERATOR.md` §4
   says and fill the column for that row. A partly-filled column is honest
   as long as each `-` is explained.
+- **ARCH-05, 2026-09-02, stated once here rather than per row:** the wave-5
+  and wave-6 sessions (T-12, T-13, T-14, T-15) run as the wave-4 and T-11
+  sessions did — autonomous cloud sessions with no operator review of a
+  proposal before it is pushed — so their `interventions` cells will read
+  `-` for the reason T-11's row gives. A row need not repeat the reason; a
+  row that *does* count (because a diff was read before merge) says so in
+  its `notes`, and that is the exception, not this note.
 
 ## Ledger
 

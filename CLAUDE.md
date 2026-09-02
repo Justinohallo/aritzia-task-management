@@ -37,7 +37,9 @@ QA session makes. A Builder that edits the spec to match what it built has
 destroyed the only independent measure of whether the build is correct.
 
 **QA** — verifies the build against `ACCEPTANCE.md` independently. Marks
-criteria met, and only with a named test.
+criteria met, and only with a named test. Writing those status marks into
+`ACCEPTANCE.md` is the one spec edit a QA session makes, in its own `docs:`
+commit; a Builder never writes a mark.
 
 One session holds one role. Do not switch roles mid-session.
 
