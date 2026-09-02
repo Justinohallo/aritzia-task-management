@@ -4,11 +4,12 @@
 > progress.
 >
 > **Appetite:** P1 complete by 2026-09-02 17:00 PT (confirmed).
-> **Estimated:** 18h30m of work across 17 tasks — 17h15m of build once the
-> two tooling tasks are excluded. The Sequence table is the source; these
+> **Estimated:** 19h00m of work across 18 tasks — 17h15m of build once the
+> three tooling tasks are excluded. The Sequence table is the source; these
 > totals are its sum. **9h45m of wall clock** when run as six waves of
 > concurrent agents. T-00 and T-16 add tooling work and no wall clock: they
-> run inside wave 0, alongside the longer T-01.
+> run inside wave 0, alongside the longer T-01. T-17 is charged to wave 1
+> but runs after it; see its detail for why.
 > See [Running in parallel](#running-in-parallel).
 >
 > **Amended 2026-09-01 (ARCH-03).** A fresh-session critic pass over the
@@ -16,6 +17,14 @@
 > amendment below is marked *ARCH-03* and the findings are recorded as
 > `B-01..B-17` in [`BLOCKERS.md`](BLOCKERS.md). The pass repeats after any
 > Architect amendment, before the next wave opens.
+>
+> **Amended 2026-09-02 (ARCH-04).** A review of the wave-0 and wave-1
+> sessions found four workflow defects — a ledger-write loop that cost
+> roughly $70 of T-01's $84.70, two squash-merge subjects that undercount
+> their criteria, four blockers with no Architect session to resolve them,
+> and an `interventions` column that has never been filled. The findings
+> are the [ARCH-04](#arch-04--workflow-amendments-from-the-wave-1-review)
+> entry below; the tooling they need is **T-17**.
 
 ## How to run a task
 
@@ -57,6 +66,7 @@ wrong, the wave is wrong too.
 | **T-02** | Auth and routing | `AC-AUTH-1..9`, `AC-NAV-1..4` | 75m | **1** | T-01 |
 | **T-03** | Task provider and persistence | `AC-STATE-1..6`, `AC-AUTH-10` | 75m | **1** | T-01 |
 | **T-06** | API Route Handlers and the secret boundary | `AC-API-3..5`, `AC-API-10` (server) | 75m | **1** | T-01 (contract only) |
+| **T-17** | Merge-boundary guards and blocker visibility | — (tooling) | 30m | **1** | T-16 |
 | **T-04** | Add-task form | `AC-ADD-1..7` | 60m | **2** | T-03 |
 | **T-05** | List, filter, complete, delete | `AC-LIST-1..4`, `AC-FILT-1..6`, `AC-DONE-1..3`, `AC-DEL-1`, `AC-DEL-3..4` | 90m | **2** | T-03 |
 | **T-07** | Resilient API client | `AC-API-6`, `AC-API-7` (client), `AC-API-12` (client), `AC-API-10` (client) | 75m | **2** | T-06 |
@@ -102,7 +112,7 @@ and CI time at each boundary is counted.
 | Wave | Agents | Tasks | Wall clock | Gate to open the next wave |
 |---|---|---|---|---|
 | **0** | 3 | T-00 ‖ T-16 ‖ T-01 | 90m | contracts exist and typecheck; CI required on `main` |
-| **1** | 3 | T-02 ‖ T-03 ‖ T-06 | 75m | all three merged, `main` green |
+| **1** | 3 | T-02 ‖ T-03 ‖ T-06 (T-17 after, alone) | 75m | all three merged, `main` green; then T-17 merged and ARCH-04 closed |
 | **2** | 3 | T-04 ‖ T-05 ‖ T-07 | 90m | all three merged, `main` green 🏁 *app works* |
 | **3** | 1 | T-08 | 90m | merged, `main` green 🏁 *brief met* |
 | **4** | 2 | T-09 ‖ T-10 | 60m | T-09 and T-10 merged |
@@ -127,6 +137,7 @@ found a spec gap and writes a blocker.**
 |---|---|---|
 | **T-00** | `.claude/skills/**`, `scripts/task.sh` | — |
 | **T-16** | `.claude/skills/**`, `scripts/spec-lint.py` | `docs/**` |
+| **T-17** | `.github/workflows/repo-guard.yml`, `.claude/skills/**`, `scripts/spec-lint.py` | `docs/**` |
 | **T-01** | everything — config, CI, `package.json`, `components/ui/**`, all contract files | — |
 | **T-02** | `app/login/**`, `app/page.tsx`, `app/(protected)/layout.tsx`, `lib/auth/**` | contracts, `components/ui/live-region.tsx` |
 | **T-03** | `lib/tasks/provider.tsx`, `lib/tasks/reducer.ts`, `lib/tasks/storage.ts`, `lib/tasks/hooks.ts` | `lib/tasks/actions.ts`, `lib/tasks/schema.ts` |
@@ -283,6 +294,106 @@ no application code, same lane as T-00.
 
 **Done when:** `--dry-run all` passes on this plan, and `spec-lint.py` passes
 on `docs/` as amended by ARCH-03.
+
+### ARCH-04 · Workflow amendments from the wave-1 review
+Architect · not a task row · *added 2026-09-02* · **status: open** — the
+entry is written; the amendments are not.
+
+Not a build task and not in the Sequence table: an Architect session that
+runs **before wave 2 opens**, on the pattern of ARCH-03. It exists because
+the wave loop in [`OPERATOR.md`](OPERATOR.md) §6 has no step that reads
+[`BLOCKERS.md`](BLOCKERS.md), and by the end of wave 1 four rows were open
+with nobody assigned to them. What it resolves, in order:
+
+1. **`B-20` — nobody mounts `<TasksProvider>`.** Blocks wave 2 outright:
+   T-04 and T-05 consume provider hooks that throw outside the provider, and
+   `app/(protected)/layout.tsx` (merged in #17) mounts `<LiveRegion />` only.
+   The layout is T-02's file and T-02 is merged, so the Architect names the
+   owner of the one-line change — the natural answer is a T-02 follow-up
+   commit inside T-17's session, which is the only session open before
+   wave 2, with the file added to T-17's row for that commit alone.
+2. **`B-19` — `task-close` check 5 fails any task whose new dependency is
+   already covered by an ADR.** Choose the durable resolution the row
+   proposes (a dependency whose name appears in `docs/adr/*.md` is accepted)
+   and schedule the script change in T-17.
+3. **`B-18` — `spec-lint.py` is not run by CI.** Add
+   `.github/workflows/repo-guard.yml` to T-17's ownership row so the lint
+   job lands there (done above), and close the row.
+4. **`B-21` — the Route Handler's `400 invalid_request` has no criterion.**
+   Add a new `AC-API-` criterion to `ACCEPTANCE.md` or fold it into `AC-API-4`; the tests
+   in `test/api/handlers.test.ts` already exist and are waiting for an ID.
+5. **`OPERATOR.md` §6 gets a step 0:** "open `BLOCKERS.md`; every row whose
+   Resolution is `open` is resolved in an Architect session before wave
+   N+1 starts." And §5 gets the rule that the PR title is built from the
+   union of criterion IDs across the branch's commits, not from the first
+   commit — the platform pre-fills it from the first commit, which is how
+   #17 lost `AC-AUTH-1`, `AC-NAV-1..2` and #18 lost `AC-API-3` on `main`.
+6. **Decide the `interventions` column.** Every row on `main` is `-`. The
+   PR timestamps say why: #17 and #18 were merged three minutes after they
+   were opened, and no diff was read. Either amend `LEDGER.md` to say that
+   intervention counting needs a review pass this operator is not doing and
+   that the quality evidence is T-13, or redefine the three counts so a
+   script can derive them at merge time — *accepted* = merged with no review
+   comment and no post-open commit, *edited* = commits pushed after a review
+   comment, *rejected* = closed unmerged — and schedule that script in T-17.
+   One or the other; a column defined as "the number worth watching" and
+   never populated is worse in the presentation than a column removed.
+7. **Annotate the two damaged rows.** T-01's notes say what share of its
+   $84.70 was the ledger loop (75 `chore: update T-01 ledger row` commits on
+   #10 between 20:02 and 02:49), and the T-02 and T-06 rows record the
+   criteria their squash-merge subjects omit, since a merged subject cannot
+   be changed.
+
+**Done when:** `B-18..B-21` carry a Resolution and a Commit, `OPERATOR.md`
+§5 and §6 are amended, `LEDGER.md` states the interventions decision, and
+`spec-lint.py` passes. No application code.
+
+### T-17 · Merge-boundary guards and blocker visibility
+tooling · 30m · **wave 1** — runs alone, after T-02/T-03/T-06 are merged and before wave 2 opens · *added by ARCH-04*
+
+Every rule that wave 1 broke was enforced only inside the session, by a
+close turn the operator can skip by pressing **Merge** first. This task moves
+three of them to the merge boundary, where the button stays grey until they
+hold, and makes open blockers visible where a Builder will read them. Same
+lane and same constraints as T-16: stdlib or workflow YAML, no runtime
+dependency, no application code.
+
+- **PR-title job in `repo-guard.yml`.** Fails a pull request whose title does
+  not match `<type>(<scope>): <TASK-ID> … [<criteria>]` for a Builder
+  branch, and — for any commit on the branch that carries `[AC-…]` — whose
+  bracketed set is not the union of the branch's commit criteria. `chore:`
+  and `docs:` titles are exempt, as in `CLAUDE.md` rule 3.
+- **Ledger-row job in `repo-guard.yml`.** Fails a Builder pull request whose
+  diff does not add a `docs/LEDGER.md` row with the task ID in the title.
+  This is what makes `/task-close` unskippable: without it, T-01, T-16, T-06
+  and T-02 all merged before their rows existed, and T-02 still has none.
+- **`spec-lint` job in `repo-guard.yml`** on any pull request touching
+  `docs/**` or `scripts/spec-lint.py` — the `B-18` drop-in, stdlib only.
+- **`task-start` prints open blockers.** Every `BLOCKERS.md` row whose
+  Resolution is `open`, with the ones naming this task or a path in its
+  ownership row first. It warns; it does not refuse — refusing would hold
+  every wave on the Architect's calendar.
+- **`task-close` check 5 accepts an ADR-covered dependency** (`B-19`): a
+  new entry in `dependencies` passes if its package name appears in any file
+  under `docs/adr/`.
+- **If ARCH-04 chooses the derivable definition of `interventions`:**
+  `scripts/ledger.py --annotate <id> --interventions from-pr <N>` reads the
+  pull request's review comments, post-open commits and merge state from the
+  GitHub API and writes the three counts, with `derived from #N` in `notes`.
+  If ARCH-04 chooses the honesty note instead, this bullet is dropped and
+  the estimate falls to 20m.
+- **The `B-20` follow-up commit**, if ARCH-04 assigns it here: mount
+  `<TasksProvider>` inside `RequireAuth` in `app/(protected)/layout.tsx`,
+  one commit, `[AC-STATE-1]`, the file added to this task's row for that
+  commit only.
+
+**Done when:** a pull request with a mistitled subject, or with no ledger
+row, is red on Repo Guard; `task-start --dry-run all` still passes;
+`spec-lint.py` runs green in CI on this branch; and `/task-close` on this
+session passes check 5 with `package.json` unchanged.
+
+**Time box:** 45m. Past that, ship the two `repo-guard.yml` jobs and the
+`task-start` warning, and leave the rest as a `B-` row.
 
 ### T-01 · Scaffold, contracts, and CI
 `AC-QUAL-1`, `AC-QUAL-2`, `AC-CI-1`, `AC-CI-2` · 90m · **wave 0, solo**
