@@ -126,8 +126,8 @@ nobody can say which describes the system.
 
 Every session produces one row in [`docs/LEDGER.md`](docs/LEDGER.md) with exact
 token counts and API-equivalent cost, written automatically by
-`scripts/ledger.py` (registered as `Stop` and `SessionEnd` hooks in
-`.claude/settings.json`).
+`scripts/ledger.py` (registered as a `SessionEnd` hook in `.claude/settings.json`,
+and refreshed from the transcript by the closing turn).
 
 **At the end of a task**, fill in what the transcript cannot report:
 
@@ -155,11 +155,19 @@ hand-editable, or the table stops being evidence.
 The row belongs with the work it measures, so **stage `docs/LEDGER.md` with the
 task's final commit**.
 
-A `Stop` hook in this environment also asks for a clean working tree after every
-turn, which conflicts with that during a long session. When it does, commit the
-row on its own as `chore: update <TASK-ID> ledger row` and carry on. The rule
-that matters is attribution — that the row names the right task and the right
-criteria — not which commit it rides in on.
+The platform's own `Stop` hook asks for a clean working tree after every turn.
+That is why the ledger is **not** written on `Stop`: a row rewritten every turn
+forced a commit and a push every turn, each push redeployed and re-ran CI, and
+each of those events woke the session for another turn — a loop that ran until
+the session's budget was gone. The row is written once, at close, by the
+`--transcript` refresh in `/task-close`; if it must be committed on its own,
+use `chore: update <TASK-ID> ledger row`. The rule that matters is attribution —
+that the row names the right task and the right criteria — not which commit it
+rides in on.
+
+For the same reason, **a Builder session does not subscribe to its pull
+request's activity.** Merging is the operator's job (`docs/OPERATOR.md` §5), and
+every bot comment edit on a PR is a wake.
 
 `.current-task` and `.current-criteria` are gitignored: per-session local
 state, not repository content.

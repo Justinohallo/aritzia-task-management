@@ -1,8 +1,8 @@
 # Session ledger
 
 One row per Claude Code session. Rows are written automatically by
-`scripts/ledger.py`, registered as a `Stop` and `SessionEnd` hook in
-`.claude/settings.json`. Token counts come from the session transcript's
+`scripts/ledger.py`, registered as a `SessionEnd` hook in `.claude/settings.json`
+and run by the closing turn against the session transcript. Token counts come from the session transcript's
 per-response `usage` objects, not from an estimate.
 
 ## How to read this table
@@ -55,12 +55,18 @@ per-response `usage` objects, not from an estimate.
 ## The capture mechanism
 
 **Which hooks exist, and which are used.** `.claude/settings.json` registers
-`scripts/ledger.py` on two events:
+`scripts/ledger.py` on one event:
 
 | Event | Why it is registered |
 |---|---|
-| `Stop` | Fires when the model finishes a turn. Gives a live row that is correct even if the session is later killed rather than closed. |
 | `SessionEnd` | Fires on clean session close. The authoritative final write. |
+
+`Stop` was registered originally, for a live row that survived a killed
+session, and was removed after T-03: on Claude Code on the web the platform's
+own `Stop` hook demands a clean tree, so a row rewritten every turn forced a
+commit and push every turn, and every push fed events (CI, deploy-bot comment
+edits) that woke the session for another turn. The live row is instead
+produced by `--transcript` in the closing turn (`docs/OPERATOR.md` §4).
 
 `SubagentStop` is deliberately **not** registered, and that is a known gap
 rather than an oversight — see "What this ledger cannot measure" below.
@@ -133,8 +139,9 @@ spec problem to fix upstream, not a model problem to work around.
 | 2026-09-01 | 1956c5c3-fa58-5210-93eb-80b25fbca702 | T-00 | - | 26.1 | 13.8 | 0.53 | 130 | 64,733 | 177,349 | 8,060,736 | 7.42 | claude-opus-5 100% | - | 0 | n/a | T-00 repo skills; closed via /task-close (dogfood). Interventions not counted: T-00 was authored and closed before review, so an accepted/edited/rejected split would have measured only what went unchallenged. Wave-aware from ARCH-02. |
 | 2026-09-01 | 65e109b6-9733-5120-93e6-939e021641a0 | OPS-01 | - | 7.0 | 6.5 | 0.94 | 1,327 | 27,130 | 160,860 | 2,019,109 | 5.09 | claude-fable-5-1 100% | - | - | - | operator runbook for cloud sessions + SessionStart hook; docs and tooling only, no application code |
 | 2026-09-01 | d005e148-8336-5876-8913-007a098145a6 | ARCH-03 | - | 19.4 | 13.0 | 0.67 | 14,531 | 62,424 | 210,310 | 3,366,617 | 8.31 | claude-fable-5-1 100% | - | - | n/a | Architect: pre-wave critic pass over the whole spec system, then the amendments. 15 findings (B-01..B-15 in BLOCKERS.md) resolved in one docs commit; T-16 added for the tooling follow-ups. No application code. |
-| 2026-09-01 | db89409f-a272-5522-9262-f14f56e6bd5d | T-16 | - | 23.5 | 10.5 | 0.45 | 1,565 | 54,639 | 344,909 | 2,006,360 | 10.15 | claude-fable-5-1 100% | - | - | - | - |
-| 2026-09-01 | 33599ac4-c5de-59b6-87ee-99271d908a0d | T-01 | AC-QUAL-1,AC-QUAL-2,AC-CI-1,AC-CI-2 | 425.2 | 39.3 | 0.09 | 29,210 | 128,977 | 2,287,602 | 129,050,626 | 84.70 | claude-fable-5-1 100% | - | - | - | - |
+| 2026-09-01 | db89409f-a272-5522-9262-f14f56e6bd5d | T-16 | - | 23.5 | 10.5 | 0.45 | 1,565 | 54,639 | 344,909 | 2,006,360 | 10.15 | claude-fable-5-1 100% | - | 0 | n/a | spec lint, gate dry-run, same-wave dependencies; tooling only, merged (#11). Closed after the fact from the T-03 kickoff; /task-close was not run. Interventions not counted. |
+| 2026-09-01 | 33599ac4-c5de-59b6-87ee-99271d908a0d | T-01 | AC-QUAL-1,AC-QUAL-2,AC-CI-1,AC-CI-2 | 425.2 | 39.3 | 0.09 | 29,210 | 128,977 | 2,287,602 | 129,050,626 | 84.70 | claude-fable-5-1 100% | - | 26 | pass | scaffold, frozen contracts, CI; merged green (#10). Closed after the fact from the T-03 kickoff: /task-close was not run (B-19 fails check 5 for T-01 by construction). Interventions not counted. |
+| 2026-09-02 | a1e2527a-955c-57c7-8a96-ce456825de0b | T-03 | AC-STATE-1,AC-STATE-2,AC-STATE-3,AC-STATE-4,AC-STATE-5,AC-STATE-6,AC-AUTH-10 | 16.4 | 9.1 | 0.56 | 3,739 | 39,766 | 208,398 | 8,493,721 | 8.32 | claude-fable-5-1 100% | - | 35 | pass | provider/reducer/storage/hooks; 35 tests naming all 7 criteria; suite, lint, build and bundle test green. qa_result is the Builder's own gate run: independent QA is T-13. Interventions not counted: the operator ran this session unattended and reviewed no diff mid-session. Also closes T-01/T-16 ledger rows (chore) and records B-20 (nobody mounts TasksProvider). |
 
 ## What this ledger cannot measure
 

@@ -168,9 +168,10 @@ Before committing, refresh this session's ledger row from the transcript
 docs/LEDGER.md with the subject the skill prints, and push.
 ```
 
-Why the refresh line: the `Stop` hook writes the row when a turn *ends*, so
-without it the committed row would be missing the whole close turn. With it,
-the committed row is short by only the final response. That last sliver is
+Why the refresh line: the ledger is written on `SessionEnd` only (see
+`LEDGER.md`, "The capture mechanism", for why not on `Stop`), so without it
+nothing would be committed at all. With it, the committed row is short by only
+the final response. That last sliver is
 never captured in a cloud session; it is recorded as a known gap in
 [`LEDGER.md`](LEDGER.md#what-this-ledger-cannot-measure).
 
@@ -241,7 +242,7 @@ the cloud does not match, and what to do about each.
 | `feat/t-05-list` branch names (`TASKS.md` rule 1) | The platform names the branch `claude/<slug>-<suffix>` and the git proxy only allows pushes to that branch. | Accept it. Attribution comes from the ledger row and the PR title, not the branch name. Resolved as `B-16`: rule 1 and `CONTRIBUTING.md` now accept platform-named branches. |
 | `.current-task` persists between sessions on your disk | The container starts clean every session. | The Builder prompt runs `/task-start` first. An untagged row means the prompt was not followed — say so in that row's `notes`, do not hand-edit `task_id`. |
 | `main` is on disk | The clone has only the session branch. | The `SessionStart` hook fetches `origin/main`. Without it `task-close` cannot find the base and fails. |
-| `Stop` hook writes the row while you are still in the session | Same, but the row lands in a container you cannot see. | The close turn commits it (§4). Work left uncommitted when a session expires is gone. |
+| The ledger row is written by a hook while you are in the session | The platform's `Stop` hook demands a clean tree every turn, so a per-turn ledger write forced a push per turn and every push woke the session again. | The ledger writes on `SessionEnd` only; the close turn refreshes and commits it (§4). Never subscribe a Builder session to its PR's activity — merging is yours (§5). |
 | `npm install` once | Fresh VM each session. | After T-01: `npm install` in the environment's **Setup script**. It runs once and is cached for about a week. |
 | A plan file and a chat | The session has no memory of any other session. | Every prompt names the task and points at `CLAUDE.md`. Cross-session state lives in `main`: the ledger, the spec, the code. |
 
