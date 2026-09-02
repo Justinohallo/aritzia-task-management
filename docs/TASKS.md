@@ -4,7 +4,7 @@
 > progress.
 >
 > **Appetite:** P1 complete by 2026-09-02 17:00 PT (confirmed).
-> **Estimated:** 19h00m of work across 18 tasks — 17h15m of build once the
+> **Estimated:** 18h50m of work across 18 tasks — 17h15m of build once the
 > three tooling tasks are excluded. The Sequence table is the source; these
 > totals are its sum. **9h45m of wall clock** when run as six waves of
 > concurrent agents. T-00 and T-16 add tooling work and no wall clock: they
@@ -65,8 +65,8 @@ wrong, the wave is wrong too.
 | **T-01** | Scaffold, contracts, and CI | `AC-QUAL-1..2`, `AC-CI-1..2` | 90m | **0** | — |
 | **T-02** | Auth and routing | `AC-AUTH-1..9`, `AC-NAV-1..4` | 75m | **1** | T-01 |
 | **T-03** | Task provider and persistence | `AC-STATE-1..6`, `AC-AUTH-10` | 75m | **1** | T-01 |
-| **T-06** | API Route Handlers and the secret boundary | `AC-API-3..5`, `AC-API-10` (server) | 75m | **1** | T-01 (contract only) |
-| **T-17** | Merge-boundary guards and blocker visibility | — (tooling) | 30m | **1** | T-16 |
+| **T-06** | API Route Handlers and the secret boundary | `AC-API-3..5`, `AC-API-10` (server), `AC-API-13` | 75m | **1** | T-01 (contract only) |
+| **T-17** | Merge-boundary guards and blocker visibility | — (tooling) | 20m | **1** | T-16 |
 | **T-04** | Add-task form | `AC-ADD-1..7` | 60m | **2** | T-03 |
 | **T-05** | List, filter, complete, delete | `AC-LIST-1..4`, `AC-FILT-1..6`, `AC-DONE-1..3`, `AC-DEL-1`, `AC-DEL-3..4` | 90m | **2** | T-03 |
 | **T-07** | Resilient API client | `AC-API-6`, `AC-API-7` (client), `AC-API-12` (client), `AC-API-10` (client) | 75m | **2** | T-06 |
@@ -137,7 +137,7 @@ found a spec gap and writes a blocker.**
 |---|---|---|
 | **T-00** | `.claude/skills/**`, `scripts/task.sh` | — |
 | **T-16** | `.claude/skills/**`, `scripts/spec-lint.py` | `docs/**` |
-| **T-17** | `.github/workflows/repo-guard.yml`, `.claude/skills/**`, `scripts/spec-lint.py` | `docs/**` |
+| **T-17** | `.github/workflows/repo-guard.yml`, `.claude/skills/**`, `scripts/spec-lint.py`; for one commit each, and nothing else in them: `app/(protected)/layout.tsx` (the `B-20` mount) and `test/api/handlers.test.ts` (the `B-21` rename) | `docs/**` |
 | **T-01** | everything — config, CI, `package.json`, `components/ui/**`, all contract files | — |
 | **T-02** | `app/login/**`, `app/page.tsx`, `app/(protected)/layout.tsx`, `lib/auth/**` | contracts, `components/ui/live-region.tsx` |
 | **T-03** | `lib/tasks/provider.tsx`, `lib/tasks/reducer.ts`, `lib/tasks/storage.ts`, `lib/tasks/hooks.ts` | `lib/tasks/actions.ts`, `lib/tasks/schema.ts` |
@@ -296,8 +296,9 @@ no application code, same lane as T-00.
 on `docs/` as amended by ARCH-03.
 
 ### ARCH-04 · Workflow amendments from the wave-1 review
-Architect · not a task row · *added 2026-09-02* · **status: open** — the
-entry is written; the amendments are not.
+Architect · not a task row · *added 2026-09-02* · **status: closed 2026-09-02** —
+items 1–7 resolved in `docs: ARCH-04 resolve B-18..B-21, amend OPERATOR.md, decide interventions`;
+`B-18..B-21` carry their Resolution and Commit in `BLOCKERS.md`.
 
 Not a build task and not in the Sequence table: an Architect session that
 runs **before wave 2 opens**, on the pattern of ARCH-03. It exists because
@@ -349,7 +350,7 @@ with nobody assigned to them. What it resolves, in order:
 `spec-lint.py` passes. No application code.
 
 ### T-17 · Merge-boundary guards and blocker visibility
-tooling · 30m · **wave 1** — runs alone, after T-02/T-03/T-06 are merged and before wave 2 opens · *added by ARCH-04*
+tooling · 20m · **wave 1** — runs alone, after T-02/T-03/T-06 are merged and before wave 2 opens · *added by ARCH-04; estimate set at 20m when ARCH-04 chose the interventions honesty note over a derivation script*
 
 Every rule that wave 1 broke was enforced only inside the session, by a
 close turn the operator can skip by pressing **Merge** first. This task moves
@@ -376,16 +377,17 @@ dependency, no application code.
 - **`task-close` check 5 accepts an ADR-covered dependency** (`B-19`): a
   new entry in `dependencies` passes if its package name appears in any file
   under `docs/adr/`.
-- **If ARCH-04 chooses the derivable definition of `interventions`:**
-  `scripts/ledger.py --annotate <id> --interventions from-pr <N>` reads the
-  pull request's review comments, post-open commits and merge state from the
-  GitHub API and writes the three counts, with `derived from #N` in `notes`.
-  If ARCH-04 chooses the honesty note instead, this bullet is dropped and
-  the estimate falls to 20m.
-- **The `B-20` follow-up commit**, if ARCH-04 assigns it here: mount
+- **The `B-20` follow-up commit** (assigned here by ARCH-04): mount
   `<TasksProvider>` inside `RequireAuth` in `app/(protected)/layout.tsx`,
-  one commit, `[AC-STATE-1]`, the file added to this task's row for that
-  commit only.
+  one commit, `[AC-STATE-1]`, nothing else in it. The file is in this task's
+  ownership row for that commit only.
+- **The `B-21` rename commit** (assigned here by ARCH-04): the describe block
+  in `test/api/handlers.test.ts` that cites `B-21` names `AC-API-13`
+  instead, one commit, `[AC-API-13]`, no assertion changed. The file is in
+  this task's ownership row for that commit only.
+- *No interventions script.* ARCH-04 chose the honesty note
+  (`LEDGER.md`, "What `interventions` counts"), so the `--interventions
+  from-pr` derivation is not built and the estimate is 20m, not 30m.
 
 **Done when:** a pull request with a mistitled subject, or with no ledger
 row, is red on Repo Guard; `task-start --dry-run all` still passes;
@@ -457,6 +459,9 @@ not middleware, which cannot see `sessionStorage`
 ([ADR-0001](adr/0001-app-router.md), [ADR-0005](adr/0005-auth-and-secret-boundary.md)).
 The non-production notice on the login page. Mounts T-01's `<LiveRegion />`
 once in the protected layout, so every later task announces through it.
+*ARCH-04 (`B-20`):* the same layout mounts `<TasksProvider>` inside
+`RequireAuth`; T-02 merged without it, and the one-line follow-up commit
+lands in the T-17 session.
 
 **Done when:** `AC-AUTH-5` passes — the new-tab case is asserted, not assumed.
 
@@ -523,6 +528,12 @@ task cannot prove.*
 the key's value and its variable name.** It is the only test in the suite that
 proves an absence, and it is the one that makes the secret-handling claim
 checkable rather than asserted. Do not defer it.
+
+*ARCH-04 (`B-21`):* `AC-API-13` — a malformed request is rejected with
+`400 invalid_request` before the upstream is called — is this task's. It was
+built and tested in #18 under a describe block that cites `B-21` instead of
+an ID; the one-line rename that makes the tests name `AC-API-13` lands in
+the T-17 session.
 
 > Moved from wave 3 to wave 1. This task writes only `app/api/**` and
 > `lib/server/**`, imports only `types/api.ts` and `lib/api/config.ts`, and
@@ -617,7 +628,7 @@ path on a real phone-width viewport, not a desktop devtools emulation.
 ### T-13 · QA pass
 verification only · 45m · **wave 5, solo** — fresh session, no shared context
 
-Independent walk of all 78 criteria against the deployed build. Fresh session —
+Independent walk of all 79 criteria against the deployed build. Fresh session —
 QA that shares context with the Builder is not independent. Findings are
 written to [`BLOCKERS.md`](BLOCKERS.md), and the Architect turns them into
 tasks; the QA session writes no application code and no spec.

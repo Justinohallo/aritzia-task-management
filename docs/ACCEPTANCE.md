@@ -34,7 +34,7 @@ could not have one.)*
 | R4 | "Use TypeScript throughout the application" | `AC-QUAL-1..2` |
 | R5 | "Ensure the application is responsive and works well on both desktop and mobile screens" | `AC-UI-1..4` |
 | R6 | "Write unit tests for the components using Jest and React Testing Library" | `AC-TEST-1..4` |
-| R7 | "Simulate an API call on each addition and removal (assume the API requires a private key for use and consider potential rate-limiting scenarios)" | `AC-API-1..12` |
+| R7 | "Simulate an API call on each addition and removal (assume the API requires a private key for use and consider potential rate-limiting scenarios)" | `AC-API-1..13` |
 | R8 | "Build UI components using a React component library of your choice (eg. Shadcn)" | `AC-UI-5..6` |
 | R9 | "Use a provider for state management, incorporating semipersistent state principles without relying on a full-fledged store" | `AC-STATE-1..6` |
 | R10 | "Add a locally persisted log in form … using session storage for authentication data and local storage for maintaining a semi-persistent list" | `AC-AUTH-1..10` |
@@ -488,6 +488,20 @@ Given a request fails because of rate limiting
 Then the message shown differs from a generic failure message
 And it indicates that the action can be retried shortly
 ```
+
+#### AC-API-13 — The Route Handler rejects a malformed request
+```gherkin
+Given the browser sends a create or delete request whose body or id does not satisfy the frozen request schema
+When the Route Handler receives it
+Then the response status is 400 with the error code invalid_request
+And the upstream is not called
+And the key is not presented
+```
+> Validation runs before the key check, so a malformed request never reaches
+> the upstream and never consumes rate-limit allowance (`AC-API-5`). The
+> schema is `lib/tasks/schema.ts`, frozen at T-01; the status and code are
+> `RouteHandlerErrorStatus` in `types/api.ts`. *(ARCH-04, `B-21`: the
+> behaviour was built and tested in T-06 with no criterion to name.)*
 
 ---
 

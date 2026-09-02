@@ -14,7 +14,7 @@ point.
 | Read | For |
 |---|---|
 | [`docs/PROJECT.md`](docs/PROJECT.md) | scope, the NOT list, assumptions, definition of done |
-| [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) | 78 testable criteria, each traced to a line of the brief |
+| [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) | 79 testable criteria, each traced to a line of the brief |
 | [`docs/adr/`](docs/adr/) | the six decisions, each with a build-vs-buy section |
 | [`docs/TASKS.md`](docs/TASKS.md) | the build plan, as six waves of concurrent agents |
 | [`docs/LEDGER.md`](docs/LEDGER.md) | every session's token usage and API-equivalent cost |

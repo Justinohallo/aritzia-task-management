@@ -16,7 +16,7 @@ can be presented as evidence.
 | Document | What it governs |
 |---|---|
 | [`docs/PROJECT.md`](docs/PROJECT.md) | Why we are here, scope, the NOT list, appetite, assumptions |
-| [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) | 78 numbered criteria. The definition of done |
+| [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) | 79 numbered criteria. The definition of done |
 | [`docs/adr/`](docs/adr/) | Decisions already taken. Do not relitigate silently |
 | [`docs/TASKS.md`](docs/TASKS.md) | The ordered build plan |
 | [`docs/LEDGER.md`](docs/LEDGER.md) | One row per session, with cost |

@@ -127,6 +127,24 @@ The ratio is the number worth watching over time. Rising `rejected` on a task
 type means the specification is not carrying enough information — which is a
 spec problem to fix upstream, not a model problem to work around.
 
+**Decision (ARCH-04, 2026-09-02): the column stays as defined, and it is
+honestly empty.** Every Builder row on `main` reads `-` because counting
+needs a review pass this operator is not doing: #17 and #18 were merged
+three minutes after they were opened, with no diff read. The alternative —
+redefining the three counts so a script could derive them from the pull
+request (merged clean = accepted, commits after a review comment = edited,
+closed unmerged = rejected) — was rejected: on a solo-maintained repository
+with zero required reviews it would write `1/0/0` on every merged PR and
+present a mechanical fact as a quality signal. A populated column that
+measures nothing is worse evidence than an empty one that says why. So:
+
+- `-` in a Builder row means *not counted*, and the row's `notes` say so.
+- The quality evidence for the build is **T-13**, the independent QA pass,
+  and the `qa_result` column it fills — not this one.
+- If a wave is run with the diff actually read, count as `OPERATOR.md` §4
+  says and fill the column for that row. A partly-filled column is honest
+  as long as each `-` is explained.
+
 ## Ledger
 
 | date | session_id | task_id | criteria_ids | wall_clock_min | api_time_min | leverage_ratio | input_tokens | output_tokens | cache_write_tokens | cache_read_tokens | api_cost_usd | models (% of cost) | interventions (accepted/edited/rejected) | tests_added | qa_result | notes |
@@ -140,11 +158,12 @@ spec problem to fix upstream, not a model problem to work around.
 | 2026-09-01 | 65e109b6-9733-5120-93e6-939e021641a0 | OPS-01 | - | 7.0 | 6.5 | 0.94 | 1,327 | 27,130 | 160,860 | 2,019,109 | 5.09 | claude-fable-5-1 100% | - | - | - | operator runbook for cloud sessions + SessionStart hook; docs and tooling only, no application code |
 | 2026-09-01 | d005e148-8336-5876-8913-007a098145a6 | ARCH-03 | - | 19.4 | 13.0 | 0.67 | 14,531 | 62,424 | 210,310 | 3,366,617 | 8.31 | claude-fable-5-1 100% | - | - | n/a | Architect: pre-wave critic pass over the whole spec system, then the amendments. 15 findings (B-01..B-15 in BLOCKERS.md) resolved in one docs commit; T-16 added for the tooling follow-ups. No application code. |
 | 2026-09-01 | db89409f-a272-5522-9262-f14f56e6bd5d | T-16 | - | 23.5 | 10.5 | 0.45 | 1,565 | 54,639 | 344,909 | 2,006,360 | 10.15 | claude-fable-5-1 100% | - | 0 | n/a | spec lint, gate dry-run, same-wave dependencies; tooling only, merged (#11). Closed after the fact from the T-03 kickoff; /task-close was not run. Interventions not counted. |
-| 2026-09-01 | 33599ac4-c5de-59b6-87ee-99271d908a0d | T-01 | AC-QUAL-1,AC-QUAL-2,AC-CI-1,AC-CI-2 | 425.2 | 39.3 | 0.09 | 29,210 | 128,977 | 2,287,602 | 129,050,626 | 84.70 | claude-fable-5-1 100% | - | 26 | pass | scaffold, frozen contracts, CI; merged green (#10). Closed after the fact from the T-03 kickoff: /task-close was not run (B-19 fails check 5 for T-01 by construction). Interventions not counted. |
+| 2026-09-01 | 33599ac4-c5de-59b6-87ee-99271d908a0d | T-01 | AC-QUAL-1,AC-QUAL-2,AC-CI-1,AC-CI-2 | 425.2 | 39.3 | 0.09 | 29,210 | 128,977 | 2,287,602 | 129,050,626 | 84.70 | claude-fable-5-1 100% | - | 26 | pass | scaffold, frozen contracts, CI; merged green (#10). Closed after the fact from the T-03 kickoff: /task-close was not run (B-19 fails check 5 for T-01 by construction). Interventions not counted. ARCH-04: roughly $70 of the $84.70 is the ledger-write loop, not the scaffold — 75 `chore: update T-01 ledger row` commits on #10 between 20:02 and 02:49, each push waking the session for another turn (the `Stop` hook, since removed). The build itself is on the order of $15; the row is not split because loop and build share one transcript. |
 | 2026-09-02 | a1e2527a-955c-57c7-8a96-ce456825de0b | T-03 | AC-STATE-1,AC-STATE-2,AC-STATE-3,AC-STATE-4,AC-STATE-5,AC-STATE-6,AC-AUTH-10 | 16.4 | 9.1 | 0.56 | 3,739 | 39,766 | 208,398 | 8,493,721 | 8.32 | claude-fable-5-1 100% | - | 35 | pass | provider/reducer/storage/hooks; 35 tests naming all 7 criteria; suite, lint, build and bundle test green. qa_result is the Builder's own gate run: independent QA is T-13. Interventions not counted: the operator ran this session unattended and reviewed no diff mid-session. Also closes T-01/T-16 ledger rows (chore) and records B-20 (nobody mounts TasksProvider). |
-| 2026-09-02 | 5df7031d-8f20-55d1-8d5e-6f0ab58fe727 | T-06 | AC-API-3,AC-API-4,AC-API-5,AC-API-10 | 38.5 | 10.6 | 0.27 | 1,920 | 53,250 | 168,781 | 4,028,189 | 7.06 | claude-fable-5-1 100% | 0/0/0 | 43 | pass | T-06 Route Handlers and upstream; merged (#18). Row written from the transcript after merge: /task-close was not run before the PR was merged, so the close turn is not measured here. |
-| 2026-09-02 | e5916211-ad34-5f14-9435-50b9d3f5b06c | T-02 | AC-AUTH-1,AC-AUTH-2,AC-AUTH-3,AC-AUTH-4,AC-AUTH-5,AC-AUTH-6,AC-AUTH-7,AC-AUTH-8,AC-AUTH-9,AC-NAV-1,AC-NAV-2,AC-NAV-3,AC-NAV-4 | 45.7 | 11.9 | 0.26 | 2,489 | 58,391 | 358,525 | 4,867,884 | 11.33 | claude-fable-5-1 100% | - | - | - | - |
+| 2026-09-02 | 5df7031d-8f20-55d1-8d5e-6f0ab58fe727 | T-06 | AC-API-3,AC-API-4,AC-API-5,AC-API-10 | 38.5 | 10.6 | 0.27 | 1,920 | 53,250 | 168,781 | 4,028,189 | 7.06 | claude-fable-5-1 100% | 0/0/0 | 43 | pass | T-06 Route Handlers and upstream; merged (#18). Row written from the transcript after merge: /task-close was not run before the PR was merged, so the close turn is not measured here. ARCH-04: the squash-merge subject on main names AC-API-4, AC-API-5, AC-API-10 only; AC-API-3 (the bundle test) is covered by this branch and by this row's criteria_ids but is absent from the subject, which the platform pre-filled from the first commit. A merged subject cannot be changed; this row is the record. B-21 is resolved as AC-API-13, assigned to T-06; the test rename lands in T-17. |
+| 2026-09-02 | e5916211-ad34-5f14-9435-50b9d3f5b06c | T-02 | AC-AUTH-1,AC-AUTH-2,AC-AUTH-3,AC-AUTH-4,AC-AUTH-5,AC-AUTH-6,AC-AUTH-7,AC-AUTH-8,AC-AUTH-9,AC-NAV-1,AC-NAV-2,AC-NAV-3,AC-NAV-4 | 45.7 | 11.9 | 0.26 | 2,489 | 58,391 | 358,525 | 4,867,884 | 11.33 | claude-fable-5-1 100% | - | - | - | auth provider over sessionStorage, credential rule, route guards; merged (#17). Row written after merge: /task-close was not run. Interventions not counted. ARCH-04: the squash-merge subject on main names AC-AUTH-2..9, AC-NAV-3..4 only; AC-AUTH-1, AC-NAV-1 and AC-NAV-2 are covered by this branch and by this row's criteria_ids but are absent from the subject, which the platform pre-filled from the first commit. A merged subject cannot be changed; this row is the record. B-20 (nobody mounts TasksProvider) is resolved into T-17. |
 | 2026-09-02 | 3e344b0d-83bf-57e5-9b8c-09648b5b8dc6 | ARCH-04 | - | 460.6 | 4.5 | 0.01 | 1,051 | 18,631 | 230,445 | 2,130,321 | 6.08 | claude-fable-5-1 100% | - | 0 | n/a (spec only) | Architect: reviewed wave-0/1 sessions, PRs #10-#19 and BLOCKERS.md; wrote the ARCH-04 entry and T-17 into TASKS.md only. The ARCH-04 amendments themselves (B-18..B-21, OPERATOR.md, interventions decision) are still open. Interventions not counted: findings were accepted as written. |
+| 2026-09-02 | 882683e0-e5ef-5e21-895f-72b833cf35db | ARCH-04 | - | 4.0 | 3.8 | 0.95 | 4,496 | 18,577 | 124,237 | 925,757 | 3.69 | claude-fable-5-1 100% | - | 0 | n/a (spec only) | Architect: the ARCH-04 resolution session. B-18..B-21 resolved, OPERATOR.md §5/§6 amended, interventions decided (honesty note), AC-API-13 added, T-01/T-02/T-06 rows annotated. Second ARCH-04 row: the first (3e344b0d) wrote the entry, this one resolved it. No application code. Interventions not counted: items were given as a numbered brief and taken as written. |
 
 ## What this ledger cannot measure
 
