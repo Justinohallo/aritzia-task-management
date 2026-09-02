@@ -133,7 +133,7 @@ spec problem to fix upstream, not a model problem to work around.
 | 2026-09-01 | 1956c5c3-fa58-5210-93eb-80b25fbca702 | T-00 | - | 26.1 | 13.8 | 0.53 | 130 | 64,733 | 177,349 | 8,060,736 | 7.42 | claude-opus-5 100% | - | 0 | n/a | T-00 repo skills; closed via /task-close (dogfood). Interventions not counted: T-00 was authored and closed before review, so an accepted/edited/rejected split would have measured only what went unchallenged. Wave-aware from ARCH-02. |
 | 2026-09-01 | 65e109b6-9733-5120-93e6-939e021641a0 | OPS-01 | - | 7.0 | 6.5 | 0.94 | 1,327 | 27,130 | 160,860 | 2,019,109 | 5.09 | claude-fable-5-1 100% | - | - | - | operator runbook for cloud sessions + SessionStart hook; docs and tooling only, no application code |
 | 2026-09-01 | d005e148-8336-5876-8913-007a098145a6 | ARCH-03 | - | 19.4 | 13.0 | 0.67 | 14,531 | 62,424 | 210,310 | 3,366,617 | 8.31 | claude-fable-5-1 100% | - | - | n/a | Architect: pre-wave critic pass over the whole spec system, then the amendments. 15 findings (B-01..B-15 in BLOCKERS.md) resolved in one docs commit; T-16 added for the tooling follow-ups. No application code. |
-| 2026-09-01 | 33599ac4-c5de-59b6-87ee-99271d908a0d | T-01 | AC-QUAL-1,AC-QUAL-2,AC-CI-1,AC-CI-2 | 344.0 | 32.5 | 0.09 | 15,922 | 113,622 | 1,395,084 | 102,314,744 | 59.27 | claude-fable-5-1 100% | - | - | - | - |
+| 2026-09-01 | 33599ac4-c5de-59b6-87ee-99271d908a0d | T-01 | AC-QUAL-1,AC-QUAL-2,AC-CI-1,AC-CI-2 | 353.0 | 33.0 | 0.09 | 15,984 | 114,824 | 1,814,271 | 103,275,114 | 67.95 | claude-fable-5-1 100% | - | - | - | - |
 
 ## What this ledger cannot measure
 
