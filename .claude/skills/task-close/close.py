@@ -17,6 +17,7 @@ Checks, in order. Any FAIL stops the run before the ledger is touched:
   3. every claimed criterion has a test naming it   (rule 5, reported not enforced)
   4. every commit touching application code names a criterion   (rule 3)
   5. every new runtime dependency has an ADR on the branch      (rule 4)
+     or is already named in docs/adr/*.md (B-19)
   6. every file written is one this task owns  (TASKS.md, File ownership)
 
 Stdlib only, to match scripts/ledger.py and scripts/task.sh.
@@ -199,6 +200,41 @@ def runtime_deps(text):
         raise CloseError("package.json is not valid JSON; cannot diff dependencies")
 
 
+def package_appears_in(text, package):
+    """True if an npm package name appears in ADR prose (B-19).
+
+    Package names are lowercase (`zod`, `radix-ui`); ADRs write `Zod`,
+    `Radix UI`, `Next.js`. Compare case-insensitively and treat `-` / `_` /
+    whitespace as equivalent so the name in package.json is the name in
+    the decision record.
+    """
+    parts = [p for p in re.split(r"[-_]+", package) if p]
+    if not parts:
+        return False
+    body = r"[-_\s]*".join(re.escape(p) for p in parts)
+    return re.search(r"(?i)(?<![A-Za-z0-9])%s(?![A-Za-z0-9])" % body, text) is not None
+
+
+def adr_files_mentioning(root, package):
+    """Relative `docs/adr/*.md` paths whose contents mention `package`."""
+    adr_dir = os.path.join(root, "docs", "adr")
+    if not os.path.isdir(adr_dir):
+        return []
+    hits = []
+    for name in sorted(os.listdir(adr_dir)):
+        if not name.endswith(".md"):
+            continue
+        path = os.path.join(adr_dir, name)
+        try:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        if package_appears_in(text, package):
+            hits.append("docs/adr/%s" % name)
+    return hits
+
+
 def check_dependencies(root, base, report):
     """(e) Rule 4: an ADR before any new runtime dependency."""
     head_path = os.path.join(root, "package.json")
@@ -216,10 +252,22 @@ def check_dependencies(root, base, report):
         report("PASS", "dependencies", "%s, covered by %s"
                % (", ".join(added), ", ".join(adrs)))
         return []
+    # B-19: a package already named in an existing ADR does not need the
+    # Builder to edit docs/adr/ — they must not (CLAUDE.md §Roles).
+    uncovered = [pkg for pkg in added if not adr_files_mentioning(root, pkg)]
+    if not uncovered:
+        named = []
+        for pkg in added:
+            for path in adr_files_mentioning(root, pkg):
+                if path not in named:
+                    named.append(path)
+        report("PASS", "dependencies",
+               "%s, named in existing ADRs (%s)" % (", ".join(added), ", ".join(named)))
+        return []
     report("FAIL", "dependencies", "%s added with no ADR touched on this branch"
-           % ", ".join(added))
+           % ", ".join(uncovered))
     return ["new runtime dependency %s has no ADR. CLAUDE.md rule 4: the ADR comes "
-            "first, with its build-vs-buy section." % ", ".join(added)]
+            "first, with its build-vs-buy section." % ", ".join(uncovered)]
 
 
 # ---------------------------------------------------------------------------
