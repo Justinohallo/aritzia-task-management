@@ -144,6 +144,9 @@ export function TaskForm() {
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
             className="pointer-coarse:h-11"
+            // iOS WebKit shows nothing in an empty date field; `globals.css`
+            // draws a placeholder while this attribute is present.
+            data-empty={dueDate === "" ? "" : undefined}
             aria-invalid={invalid("dueDate")}
             aria-describedby={describedBy("dueDate")}
           />
