@@ -13,17 +13,6 @@
         ]
       }
     ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/ledger.py\"",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
     "SessionEnd": [
       {
         "hooks": [
