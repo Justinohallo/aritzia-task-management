@@ -17,29 +17,21 @@ import { z } from "zod";
 
 import { readApiKey } from "@/lib/server/env";
 import { getUpstream } from "@/lib/server/upstream";
-import { dueDateSchema, isoTimestampSchema, taskIdSchema, taskTitleSchema } from "@/lib/tasks/schema";
-import { RETRY_AFTER_HEADER, type ApiErrorBody, type CreateTaskRequest, type Upstream, type UpstreamResult } from "@/types/api";
+import { persistedTaskSchema, taskIdSchema } from "@/lib/tasks/schema";
+import { RETRY_AFTER_HEADER, type ApiErrorBody, type Upstream, type UpstreamResult } from "@/types/api";
 
 // ---------------------------------------------------------------------------
 // Request validation — composed from the frozen field schemas, never restated
 // ---------------------------------------------------------------------------
 
 /**
- * `POST /api/tasks` body. Unknown keys are stripped, so nothing the browser
- * adds — an `apiKey` field, say — travels any further than this line.
+ * `POST /api/tasks` body: the persisted task's fields minus `completed`,
+ * which is exactly `CreateTaskRequest` (`types/api.ts`) — deriving it here
+ * rather than restating it is what keeps the two from drifting. Unknown
+ * keys are stripped, so nothing the browser adds — an `apiKey` field, say —
+ * travels any further than this line.
  */
-export const createTaskRequestSchema = z.object({
-  id: taskIdSchema,
-  title: taskTitleSchema,
-  dueDate: dueDateSchema,
-  createdAt: isoTimestampSchema,
-});
-
-// The parsed body is exactly the contract's request type. If either drifts,
-// this stops compiling.
-type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
-const requestMatchesContract: Exact<z.infer<typeof createTaskRequestSchema>, CreateTaskRequest> = true;
-void requestMatchesContract;
+export const createTaskRequestSchema = persistedTaskSchema.omit({ completed: true });
 
 function describeIssues(error: z.ZodError): string {
   return error.issues.map((issue) => `${issue.path.join(".") || "body"}: ${issue.message}`).join("; ");

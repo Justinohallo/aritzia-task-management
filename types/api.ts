@@ -16,6 +16,7 @@
  * the field schemas exported by `lib/tasks/schema.ts` rather than redeclaring
  * the rules, so the API and the persistence layer agree on what a task is.
  */
+import type { PersistedTask } from "@/lib/tasks/schema";
 import type { Task, TaskId } from "@/types/task";
 
 // ---------------------------------------------------------------------------
@@ -47,14 +48,7 @@ export function taskEndpoint(id: TaskId): string {
  * keeps its key and its sort position on reconcile (`AC-API-8`). A new task
  * is always incomplete, so `completed` is not sent.
  */
-export interface CreateTaskRequest {
-  id: TaskId;
-  title: string;
-  /** `YYYY-MM-DD` */
-  dueDate: string;
-  /** ISO-8601 */
-  createdAt: string;
-}
+export type CreateTaskRequest = Omit<PersistedTask, "completed">;
 
 /** `201 Created`. `task.id` and `task.createdAt` equal the request's. */
 export interface CreateTaskResponse {
