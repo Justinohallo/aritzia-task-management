@@ -48,6 +48,18 @@
 > entry; the work is **T-19..T-22**, four bounded tasks in wave 7 that merge
 > before the T-15 freeze. `B-26` and `B-27` in [`BLOCKERS.md`](BLOCKERS.md)
 > record the two spec defects.
+>
+> **Amended 2026-09-03 (ARCH-08).** Time ran out. Five findings were open in
+> `BLOCKERS.md` (`B-24`, `B-28..B-31`); all five are resolved this session,
+> none needed application code, and none is mission-critical — see each
+> row's Resolution. **`T-22` and `T-15` are cut.** `T-19..T-21` are merged
+> and `ACCEPTANCE.md` already carries accurate marks for everything they
+> touched (`B-26`/`B-27` closed by the T-19 commit's own `⚙` naming, per its
+> `Done when`); a fresh QA re-walk and a timed dry run of the live URL are
+> process evidence for the deck, not brief requirements, and every criterion
+> mapping to R1–R11 or `AC-API-3` is already `☑` or `◉`. The submission is
+> ready as `main` stands at the close of this session. T-14's deck should
+> say so plainly rather than implying a freeze that never ran.
 
 ## How to run a task
 
@@ -977,6 +989,12 @@ runner option or CI step named beside it, `◉` unchanged for the seven.
 Findings go to [`BLOCKERS.md`](BLOCKERS.md). Records the `Commit` column on
 `B-26` and `B-27`. Committed as `docs: T-22 ACCEPTANCE.md status marks`.
 
+**Cut (ARCH-08, 2026-09-03).** Out of time. A second independent QA pass is
+evidence quality, not a brief requirement, and T-19's own `Done when` already
+names the rule, flag or file proving each `⚙` criterion — `ACCEPTANCE.md`
+was left accurate enough at T-13's marks for a build-vs-buy case, and
+nothing here blocks the submission.
+
 ### T-15 · Freeze and dry run
 45m · **wave 6, solo** — after T-13 *and* T-14
 
@@ -987,6 +1005,12 @@ presentation.
 *ARCH-06:* "nothing merges" includes T-18 fix sessions (and, *ARCH-07*, T-19..T-22). A bug found before
 the freeze is fixed and merged before T-15 opens, which is why wave 7 does
 not gate on T-15; a bug found after it waits until the presentation is over.
+
+**Cut (ARCH-08, 2026-09-03).** Out of time. A timed dry run is rehearsal for
+the live presentation, not a brief requirement; `T-14`'s deck should name the
+live URL and the recorded local fallback without claiming a freeze that
+never ran. `main` stays open to a T-18 fix if the operator finds one during
+the actual presentation.
 
 ### T-18 · Maintenance
 standing · no fixed duration (`0m` in the tables) · **wave 7, serial** — after T-13 *and* T-14 are closed · *added by ARCH-06*

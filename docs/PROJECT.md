@@ -153,7 +153,7 @@ They are recorded so they can be challenged rather than discovered.
 
 | ID | Question | Blocking? | Default if unanswered |
 |---|---|---|---|
-| **Q-2** | Does Aritzia expect the repo to contain the presentation, or is the deck delivered separately? | No | Deck outline committed to `docs/`; the slides themselves stay out of the repo. |
+| **Q-2** | Does Aritzia expect the repo to contain the presentation, or is the deck delivered separately? | No | Deck outline committed to `docs/`; the slides themselves stay out of the repo. **Overridden 2026-09-03 (ARCH-08):** the operator asked for the deck served from the deployed app itself, so T-18 added `app/presentation/` and `public/presentation/`. No new `AC-` was written for the route — `AC-NAV-4` (one route guard under `app/`) and `AC-API-3` (bundle boundary) already cover what matters about it, per `B-28`. |
 | **Q-3** | Should the live demo be publicly reachable, or protected? A public URL with a fake login is harmless but is a public artifact tied to a hiring process. | No | Public. No real credentials exist. |
 
 ## 11. Definition of done
