@@ -13,7 +13,8 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-const DEEP_DIVE_URL = "https://github.com/Justinohallo/aritzia-task-management/blob/main/docs/deep-dive/README.md";
+const REPO_URL = "https://github.com/Justinohallo/aritzia-task-management";
+const DEEP_DIVE_URL = `${REPO_URL}/blob/main/docs/deep-dive/README.md`;
 
 function signIn(username = "ada") {
   writeSession({ version: AUTH_STORAGE_VERSION, username, authenticatedAt: "2026-09-02T09:00:00.000Z" });
@@ -25,13 +26,14 @@ beforeEach(() => {
 });
 
 describe("components/navigation/site-nav.tsx", () => {
-  it("AC-NAV-1: the login page carries links to the presentation and the technical walkthrough", () => {
+  it("AC-NAV-1: the login page carries links to GitHub, the presentation and the technical walkthrough", () => {
     render(
       <AuthProvider>
         <LoginPage />
       </AuthProvider>,
     );
 
+    expect(screen.getByRole("link", { name: "GitHub" })).toHaveAttribute("href", REPO_URL);
     expect(screen.getByRole("link", { name: "Technical Walkthrough" })).toHaveAttribute("href", DEEP_DIVE_URL);
     expect(screen.getByRole("link", { name: "Presentation" })).toHaveAttribute("href", "/presentation");
   });
@@ -47,7 +49,7 @@ describe("components/navigation/site-nav.tsx", () => {
     expect(screen.queryByRole("link", { name: "Tasks" })).not.toBeInTheDocument();
   });
 
-  it("AC-NAV-2: the task list page carries links to the presentation and the technical walkthrough", () => {
+  it("AC-NAV-2: the task list page carries links to GitHub, the presentation and the technical walkthrough", () => {
     signIn();
     render(
       <AuthProvider>
@@ -57,6 +59,7 @@ describe("components/navigation/site-nav.tsx", () => {
       </AuthProvider>,
     );
 
+    expect(screen.getByRole("link", { name: "GitHub" })).toHaveAttribute("href", REPO_URL);
     expect(screen.getByRole("link", { name: "Technical Walkthrough" })).toHaveAttribute("href", DEEP_DIVE_URL);
     expect(screen.getByRole("link", { name: "Presentation" })).toHaveAttribute("href", "/presentation");
   });
@@ -82,6 +85,7 @@ describe("components/navigation/site-nav.tsx", () => {
       </AuthProvider>,
     );
 
+    expect(html).toContain("GitHub</a>");
     expect(html).toContain("Technical Walkthrough");
     expect(html).toContain("Presentation</a>");
     expect(html).not.toContain('href="/login"');
