@@ -1,6 +1,7 @@
 import { LiveRegion } from "@/components/ui/live-region";
 import { RequireAuth } from "@/components/auth/guards";
 import { SessionBar } from "@/components/auth/session-bar";
+import { SiteNav } from "@/components/navigation/site-nav";
 import { TasksProvider } from "@/components/tasks/provider";
 
 /**
@@ -20,7 +21,10 @@ export default function ProtectedLayout({ children }: Readonly<{ children: React
           {/* Tracks the page's max width at every breakpoint (`AC-UI-3`) and wraps rather than overflows at 320px (`AC-UI-1`). */}
           <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-between gap-x-4 gap-y-2 p-4 sm:px-6 lg:max-w-5xl lg:px-8">
             <p className="min-w-0 font-semibold tracking-tight">Aritzia Task Management</p>
-            <SessionBar />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <SiteNav />
+              <SessionBar />
+            </div>
           </div>
         </header>
         <LiveRegion />

@@ -312,7 +312,13 @@ describe("AC-A11Y-4 — full keyboard operability", () => {
     renderTasksPage();
     await screen.findByRole("checkbox", { name: "Existing" });
 
-    // Log out is first in the tab order; skip past it to the form.
+    // The nav bar's links are first in tab order, then Log out, then the form.
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Technical Walkthrough" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Presentation" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Tasks" })).toHaveFocus();
     await user.tab();
     expect(screen.getByRole("button", { name: "Log out" })).toHaveFocus();
     await user.tab();
