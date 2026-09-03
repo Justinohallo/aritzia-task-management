@@ -1,23 +1,15 @@
 /**
- * The typed API client (ADR-0004, T-07).
+ * The typed API client (ADR-0004). `fetch` against the Route Handlers in
+ * `types/api.ts`, with a per-request timeout chained to any caller signal;
+ * on `429`, wait at least `Retry-After` then jittered backoff (`AC-API-6`)
+ * within a bounded budget (`AC-API-7`); no retry of any other status, since
+ * a `400`/`401` only repeats and a `5xx` is surfaced as-is for the caller
+ * to message generically (`AC-API-12`); exhaustion surfaces as
+ * {@link RateLimitedError}, distinct from every other failure.
  *
- * `fetch` against the Route Handlers in `types/api.ts`, with:
- *
- *   - a per-request timeout enforced with `AbortController`, chained to any
- *     caller-supplied signal;
- *   - on `429`: wait at least `Retry-After`, then exponential backoff with
- *     full jitter (`AC-API-6`), within a bounded budget (`AC-API-7`);
- *   - no retry of any other status. A `400` or `401` is a caller or server
- *     configuration error and a retry only repeats it; a `5xx` is the
- *     simulation's scripted failure, surfaced as-is so T-08 can message it
- *     generically (`AC-API-12`);
- *   - exhaustion surfaced as {@link RateLimitedError}, carrying the last
- *     `Retry-After`, distinct from every other failure.
- *
- * This module renders nothing and rolls nothing back — the optimistic apply,
- * reconcile and rollback are `lib/tasks/mutations.ts` (T-08). Every source of
- * non-determinism is injected through {@link ApiClientOptions}: the `fetch`,
- * the `sleep`, and the jitter draw inside `retry.random` (`AC-API-10`).
+ * This module renders nothing and rolls nothing back — that is
+ * `lib/tasks/mutations.ts`. Every source of non-determinism is injected
+ * through {@link ApiClientOptions} (`AC-API-10`).
  */
 import { canRetry, parseRetryAfter, retryDelayMs, DEFAULT_RETRY_CONFIG, type RetryConfig } from "@/lib/api/retry";
 import {
@@ -32,20 +24,16 @@ import {
 } from "@/types/api";
 import type { TaskId } from "@/types/task";
 
-// ---------------------------------------------------------------------------
-// Errors — one class per outcome T-08 must tell apart
-// ---------------------------------------------------------------------------
+// --- Errors — one class per outcome the caller must tell apart ---
 
-/** Base of every failure the client throws. `instanceof` is the contract. */
-export class ApiClientError extends Error {
+export class ApiClientError extends Error { // base of every failure the client throws; instanceof is the contract
   constructor(message: string) {
     super(message);
     this.name = new.target.name;
   }
 }
 
-/** The server answered with an error status the client does not retry. */
-export class ApiError extends ApiClientError {
+export class ApiError extends ApiClientError { // an error status the client does not retry
   readonly status: number;
   readonly code: ApiErrorCode | undefined;
 
@@ -56,18 +44,12 @@ export class ApiError extends ApiClientError {
   }
 }
 
-/**
- * The retry budget ran out on `429`s (`AC-API-7`). Distinct from
- * {@link ApiError} so the message shown can name rate limiting and say the
- * action can be retried shortly (`AC-API-12`). `retryAfterSeconds` is the
- * last value the server sent, if any.
- */
+/** The retry budget ran out on `429`s (`AC-API-7`); distinct from {@link ApiError} so the message can name rate limiting (`AC-API-12`). */
 export class RateLimitedError extends ApiClientError {
   readonly status = 429 as const;
   readonly code = "rate_limited" as const;
   readonly retryAfterSeconds: number | undefined;
-  /** Requests sent, including the first. */
-  readonly attempts: number;
+  readonly attempts: number; // including the first request
 
   constructor(retryAfterSeconds: number | undefined, attempts: number) {
     super(
@@ -80,8 +62,7 @@ export class RateLimitedError extends ApiClientError {
   }
 }
 
-/** The request exceeded `timeoutMs` and was aborted by the client. */
-export class TimeoutError extends ApiClientError {
+export class TimeoutError extends ApiClientError { // exceeded timeoutMs; aborted by the client
   readonly timeoutMs: number;
 
   constructor(timeoutMs: number) {
@@ -90,15 +71,13 @@ export class TimeoutError extends ApiClientError {
   }
 }
 
-/** The caller's own signal aborted the request. Never retried. */
-export class AbortedError extends ApiClientError {
+export class AbortedError extends ApiClientError { // the caller's own signal aborted the request; never retried
   constructor() {
     super("Request aborted");
   }
 }
 
-/** `fetch` itself rejected: no response at all. Never retried. */
-export class NetworkError extends ApiClientError {
+export class NetworkError extends ApiClientError { // fetch itself rejected, no response at all; never retried
   readonly cause: unknown;
 
   constructor(cause: unknown) {
@@ -107,36 +86,24 @@ export class NetworkError extends ApiClientError {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Client
-// ---------------------------------------------------------------------------
+// --- Client ---
 
 export type FetchLike = (input: string, init: RequestInit) => Promise<Response>;
 
 export interface ApiClientOptions {
-  /** Defaults to the global `fetch`, looked up per call so MSW can intercept it. */
-  fetch?: FetchLike;
-  /** Retry policy; partial overrides merge onto `DEFAULT_RETRY_CONFIG`. */
-  retry?: Partial<RetryConfig>;
-  /**
-   * How a retry wait is spent. Defaults to a real timer; tests inject a stub
-   * that records the delay and resolves at once (`AC-API-10`).
-   */
-  sleep?: (ms: number) => Promise<void>;
-  /** Base URL prefixed to every path. Empty in the browser; tests may set it. */
-  baseUrl?: string;
+  fetch?: FetchLike; // defaults to the global fetch, looked up per call so MSW can intercept it
+  retry?: Partial<RetryConfig>; // partial overrides merge onto DEFAULT_RETRY_CONFIG
+  sleep?: (ms: number) => Promise<void>; // tests inject a stub that records the delay and resolves at once (AC-API-10)
+  baseUrl?: string; // prefixed to every path; empty in the browser, tests may set it
 }
 
 export interface RequestOptions {
-  /** A caller-supplied signal, chained with the timeout's. */
-  signal?: AbortSignal;
+  signal?: AbortSignal; // caller-supplied, chained with the timeout's
 }
 
 export interface ApiClient {
-  /** `POST /api/tasks` → `201`; the response echoes `request.id` and `createdAt`. */
-  createTask(request: CreateTaskRequest, options?: RequestOptions): Promise<CreateTaskResponse>;
-  /** `DELETE /api/tasks/:id` → `200`; the response echoes `id`. */
-  deleteTask(id: TaskId, options?: RequestOptions): Promise<DeleteTaskResponse>;
+  createTask(request: CreateTaskRequest, options?: RequestOptions): Promise<CreateTaskResponse>; // POST /api/tasks -> 201, echoes id/createdAt
+  deleteTask(id: TaskId, options?: RequestOptions): Promise<DeleteTaskResponse>; // DELETE /api/tasks/:id -> 200, echoes id
 }
 
 function realSleep(ms: number): Promise<void> {
@@ -179,7 +146,6 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     }
   }
 
-  /** One request with the timeout and the caller's signal both able to abort it. */
   async function send(url: string, init: RequestInit, outer: AbortSignal | undefined): Promise<Response> {
     const controller = new AbortController();
     let timedOut = false;
@@ -216,24 +182,20 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
   };
 }
 
-/** The default client: global `fetch`, real timers, `Math.random` jitter. */
-export const apiClient: ApiClient = createApiClient();
+export const apiClient: ApiClient = createApiClient(); // global fetch, real timers, Math.random jitter
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// --- Helpers ---
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw new AbortedError();
 }
 
-/** The error body if it is one; a non-JSON or malformed body is `undefined`. */
 async function readErrorBody(response: Response): Promise<ApiErrorBody | undefined> {
   try {
     const parsed: unknown = await response.json();
     if (isApiErrorBody(parsed)) return parsed;
   } catch {
-    // A body that is not JSON carries no code; the status alone is reported.
+    // not JSON: no code, the status alone is reported
   }
   return undefined;
 }

@@ -1,7 +1,7 @@
 import { render, waitFor } from "@testing-library/react";
 
 import HomePage from "@/app/page";
-import { AuthProvider } from "@/lib/auth/provider";
+import { AuthProvider } from "@/components/auth/provider";
 import { AUTH_STORAGE_VERSION, writeSession } from "@/lib/auth/session";
 
 function renderHomePage() {

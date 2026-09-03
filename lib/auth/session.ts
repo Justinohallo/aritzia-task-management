@@ -1,45 +1,27 @@
 /**
- * The auth record and its `sessionStorage` adapter — T-02 (ADR-0005;
- * `AC-AUTH-2`, `AC-AUTH-4..6`, `AC-AUTH-9`).
- *
- * The one place the application touches `sessionStorage`. The brief puts
- * the session here on purpose, and ADR-0005 says why that is not a
- * production pattern; this module follows the brief and keeps the surface
- * small enough to swap for a cookie later.
- *
- * What is stored is a **record that a login happened** — who and when —
- * and never the credential itself. The schema has no password field, and
- * unknown keys are stripped on read, so nothing this module writes can
- * carry one (`AC-AUTH-9`).
- *
- * Everything read back is untrusted input and goes through
- * {@link authRecordSchema}; on any failure the answer is "not signed in",
- * never a throw. Nothing runs at module load, so importing this file on the
- * server is safe; the caller decides when to read (after mount, never during
- * render).
+ * The auth record and its `sessionStorage` adapter (ADR-0005; `AC-AUTH-2`,
+ * `AC-AUTH-4..6`, `AC-AUTH-9`), the one place the application touches
+ * `sessionStorage`. What is stored is a record that a login happened, who
+ * and when, never the credential itself — no password field, and unknown
+ * keys are stripped on read. Everything read back is untrusted input and
+ * goes through {@link authRecordSchema}; on any failure the answer is "not
+ * signed in", never a throw. Nothing runs at module load, so importing
+ * this file on the server is safe; the caller decides when to read.
  */
 import { z } from "zod";
 
-/** `sessionStorage` key for the auth record. */
 export const AUTH_STORAGE_KEY = "aritzia.auth";
-
-/** Bump when the record's shape changes. A mismatch reads as signed out. */
-export const AUTH_STORAGE_VERSION = 1;
+export const AUTH_STORAGE_VERSION = 1; // bump when the shape changes; a mismatch reads as signed out
 
 export const authRecordSchema = z.object({
   version: z.literal(AUTH_STORAGE_VERSION),
-  /** The username as entered, trimmed. Shown in the UI; never a secret. */
-  username: z.string().min(1),
-  /** ISO-8601 timestamp of the login. */
+  username: z.string().min(1), // as entered, trimmed; shown in the UI, never a secret
   authenticatedAt: z.iso.datetime(),
 });
 
 export type AuthRecord = z.infer<typeof authRecordSchema>;
 
-/**
- * The storage to use. `undefined` on the server, or in a browser that throws
- * on access (Safari with storage disabled does). Resolved lazily, per call.
- */
+// The storage to use; undefined on the server or where access throws (Safari with storage disabled). Resolved lazily, per call.
 function defaultStorage(): Storage | undefined {
   try {
     return typeof window === "undefined" ? undefined : window.sessionStorage;
@@ -48,11 +30,7 @@ function defaultStorage(): Storage | undefined {
   }
 }
 
-/**
- * Parse whatever a raw stored string holds. Exposed so the fail-safe cases
- * can be tested without a DOM. Returns `null` unless the value is a
- * complete, valid, current-version record.
- */
+/** Parse a raw stored string, testable without a DOM; `null` unless it is a complete, valid, current-version record. */
 export function parseAuthRecord(raw: string | null | undefined): AuthRecord | null {
   if (raw == null) return null;
   let json: unknown;
@@ -65,7 +43,6 @@ export function parseAuthRecord(raw: string | null | undefined): AuthRecord | nu
   return result.success ? result.data : null;
 }
 
-/** Read the current session. Never throws. Call after mount, never during render. */
 export function readSession(storage: Storage | undefined = defaultStorage()): AuthRecord | null {
   if (!storage) return null;
   try {
@@ -75,11 +52,7 @@ export function readSession(storage: Storage | undefined = defaultStorage()): Au
   }
 }
 
-/**
- * Write the session record. Returns whether the write succeeded: a disabled
- * or full storage is reported, not thrown, so the caller can tell the user
- * the session will not survive a reload rather than pretending it will.
- */
+/** Write the session record; a disabled or full storage is reported, not thrown, so the caller can warn the reload won't keep it. */
 export function writeSession(
   record: AuthRecord,
   storage: Storage | undefined = defaultStorage(),
@@ -99,6 +72,6 @@ export function clearSession(storage: Storage | undefined = defaultStorage()): v
   try {
     storage.removeItem(AUTH_STORAGE_KEY);
   } catch {
-    // Nothing to do: a storage that cannot be cleared held nothing readable.
+    // a storage that cannot be cleared held nothing readable
   }
 }

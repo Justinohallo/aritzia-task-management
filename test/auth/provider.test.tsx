@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 
-import { AuthProvider, useAuth } from "@/lib/auth/provider";
+import { AuthProvider, useAuth } from "@/components/auth/provider";
 import { AUTH_STORAGE_KEY, AUTH_STORAGE_VERSION, writeSession } from "@/lib/auth/session";
 
 function memoryStorage(seed: Record<string, string> = {}): Storage {

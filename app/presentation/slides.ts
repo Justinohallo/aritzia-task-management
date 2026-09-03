@@ -1,5 +1,5 @@
 /*
- * The deck, as data (T-14, served by T-18 at /presentation).
+ * The deck, as data, served at /presentation.
  *
  * One source for both renderings: `app/presentation/deck.tsx` renders it in
  * the browser, and `docs/presentation/build-deck.mjs` renders it to
@@ -7,8 +7,8 @@
  * offers. Edit here and both change.
  *
  * Every number is quoted from docs/LEDGER.md, docs/ACCEPTANCE.md or
- * docs/BLOCKERS.md as of main fb7e61f (2026-09-02). Section 5 is the
- * injection point T-14 names: refresh the two ledger slides after T-15.
+ * docs/BLOCKERS.md as of main fb7e61f (2026-09-02); refresh section 5's two
+ * ledger slides after a freeze that changes those numbers.
  *
  * Erasable-syntax TypeScript only (no enums, no parameter properties):
  * Node strips the types when the build script imports this file directly.

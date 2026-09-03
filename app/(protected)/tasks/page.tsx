@@ -2,19 +2,17 @@ import { TaskForm } from "@/components/tasks/task-form";
 import { TaskList } from "@/components/tasks/task-list";
 
 /**
- * The tasks page shell (T-01 contract). It renders the add-task form above the
- * task list and nothing else. T-04 replaces `components/tasks/task-form.tsx`
- * and T-05 replaces `components/tasks/task-list.tsx`; neither touches this
- * file. Route protection is the protected layout's job (T-02, `AC-NAV-4`).
+ * The tasks page shell. It renders the add-task form above the task list
+ * and nothing else; route protection is the protected layout's job
+ * (`AC-NAV-4`).
  *
- * Wave 4 (T-10, `AC-UI-1..4`): one column up to the `lg` breakpoint, where
- * the form moves into a fixed-width left column that stays in view while
- * the list scrolls on the right — the extra desktop width is used, not
- * stretched (`AC-UI-3`). The DOM order is unchanged, so the form still
- * precedes the list for a reader and for the keyboard (`AC-A11Y-4`); only
- * the grid placement differs. `min-w-0` on both columns lets a long,
- * unbroken title wrap inside its column instead of widening the page
- * (`AC-UI-1`).
+ * One column up to the `lg` breakpoint, where the form moves into a
+ * fixed-width left column that stays in view while the list scrolls on the
+ * right — the extra desktop width is used, not stretched (`AC-UI-3`). The
+ * DOM order is unchanged, so the form still precedes the list for a reader
+ * and for the keyboard (`AC-A11Y-4`); only the grid placement differs.
+ * `min-w-0` on both columns lets a long, unbroken title wrap inside its
+ * column instead of widening the page (`AC-UI-1`).
  */
 export default function TasksPage() {
   return (

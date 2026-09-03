@@ -8,7 +8,7 @@ import styles from "./deck.module.css";
 import { PPTX_PATH, SLIDES, type Chart, type Slide } from "./slides";
 
 /**
- * `/presentation` — the T-14 deck, served by the app (T-18).
+ * `/presentation` — the deck, served by the app.
  *
  * A 1280 × 720 stage scaled to the viewport. Keyboard: arrows / Space /
  * PageUp / PageDown move, Home / End jump, N toggles speaker notes, Esc
@@ -164,9 +164,7 @@ export function Deck() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// One renderer per layout
-// ---------------------------------------------------------------------------
+// --- One renderer per layout ---
 
 function SlideBody({ slide: s }: { slide: Slide }) {
   switch (s.layout) {
@@ -354,9 +352,7 @@ function Fragments({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// ---------------------------------------------------------------------------
-// Inline SVG charts, drawn to one scale each
-// ---------------------------------------------------------------------------
+// --- Inline SVG charts, drawn to one scale each ---
 
 function ChartView({ chart }: { chart: Chart }) {
   return chart.kind === "bars" ? <Bars chart={chart} /> : <Dots chart={chart} />;

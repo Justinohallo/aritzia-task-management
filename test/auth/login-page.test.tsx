@@ -6,7 +6,7 @@ import path from "node:path";
 
 import LoginPage from "@/app/login/page";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/credentials";
-import { AuthProvider } from "@/lib/auth/provider";
+import { AuthProvider } from "@/components/auth/provider";
 import { AUTH_STORAGE_KEY, AUTH_STORAGE_VERSION, writeSession } from "@/lib/auth/session";
 
 function renderLoginPage() {

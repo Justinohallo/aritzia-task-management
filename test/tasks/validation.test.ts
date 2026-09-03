@@ -102,7 +102,7 @@ describe("isOverdue", () => {
 
   it("AC-ADD-7: defaults to the local calendar day, not a UTC instant", () => {
     // 23:30 local on the 2nd. In any timezone ahead of UTC this instant is
-    // already the 3rd in UTC; the local day is what counts (AM-12).
+    // already the 3rd in UTC; the local day is what counts.
     const lateEvening = new Date(2026, 8, 2, 23, 30);
     expect(localToday(lateEvening)).toBe("2026-09-02");
     expect(localToday(new Date(2026, 0, 5, 0, 15))).toBe("2026-01-05");

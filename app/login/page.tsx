@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { RedirectIfAuthenticated } from "@/lib/auth/guards";
+import { RedirectIfAuthenticated } from "@/components/auth/guards";
 
 import { LoginForm } from "./login-form";
 
@@ -10,13 +10,12 @@ export const metadata: Metadata = {
 };
 
 /**
- * `/login` — T-02 (ADR-0001, ADR-0005; `AC-NAV-1`, `AC-AUTH-1`, `AC-AUTH-8`).
+ * `/login` (ADR-0001, ADR-0005; `AC-NAV-1`, `AC-AUTH-1`, `AC-AUTH-8`).
  *
  * A signed-in user is sent to `/tasks`; everyone else gets the form. The
  * notice below the form is ADR-0005's requirement that the running
  * application, not only the decision record, says this pattern is not
- * production auth. `<AuthProvider>` is mounted once, in the root layout
- * (T-20).
+ * production auth. `<AuthProvider>` is mounted once, in the root layout.
  */
 export default function LoginPage() {
   return (

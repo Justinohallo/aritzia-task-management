@@ -4,12 +4,12 @@ import { Deck } from "./deck";
 
 export const metadata: Metadata = {
   title: "Presentation · Aritzia Task Management",
-  description: "The T-14 case presentation: approach, rationale, and the AI workflow that produced the build.",
+  description: "The case presentation: approach, rationale, and the AI workflow that produced the build.",
   robots: { index: false },
 };
 
 /**
- * `/presentation` — the deck, presented from the deployed app (T-18).
+ * `/presentation` — the deck, presented from the deployed app.
  *
  * Deliberately outside `app/(protected)/`: it is shown before anyone logs
  * in and reads nothing from storage, so it needs no guard (`AC-NAV-4`

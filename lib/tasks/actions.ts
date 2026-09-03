@@ -1,9 +1,6 @@
 /**
- * Reducer actions — frozen at T-01 (`docs/TASKS.md`, contract table).
+ * Reducer actions.
  *
- * Read by T-03 (reducer), T-04 and T-05 (local mutations) and T-08
- * (optimistic lifecycle). Every case the plan needs is declared here now,
- * including the T-08 ones, so no agent has to widen the union mid-wave.
  * The reducer switches exhaustively over `type`; a case it does not handle
  * yet is a `never` branch or a no-op, and stays a compile error if removed.
  *
@@ -15,46 +12,15 @@ import type { ApiTask } from "@/types/api";
 import type { Task, TaskId } from "@/types/task";
 
 export type TaskAction =
-  // -------------------------------------------------------------------------
-  // T-03 — persistence (ADR-0002)
-  // -------------------------------------------------------------------------
-  /**
-   * Replace state with the list read from `localStorage` after mount. Every
-   * hydrated task is `confirmed` — the persisted envelope carries no sync
-   * state (`lib/tasks/schema.ts`). Dispatched once; must not trigger a write.
-   */
-  | { type: "hydrate"; tasks: Task[] }
+  // --- Persistence (ADR-0002) ---
+  | { type: "hydrate"; tasks: Task[] } // localStorage's list after mount; hydrated tasks are always confirmed; dispatched once, must not trigger a write
+  | { type: "setCompleted"; id: TaskId; completed: boolean } // AC-DONE-1/2; not an API call
 
-  /** Mark complete or incomplete (`AC-DONE-1`, `AC-DONE-2`). Not an API call. */
-  | { type: "setCompleted"; id: TaskId; completed: boolean }
-
-  // -------------------------------------------------------------------------
-  // T-08 — optimistic lifecycle (ADR-0004; AC-API-8, AC-API-9, AC-API-11)
-  // -------------------------------------------------------------------------
-  /**
-   * Optimistic create: the row appears now with `sync: 'syncing'`
-   * (`AC-API-8`, `AC-API-11`). `task.id` and `task.createdAt` are the values
-   * the request carries; the server echoes both.
-   */
-  | { type: "add/optimistic"; task: Task }
-  /**
-   * Reconcile with the server's record on `201`. Match by `id`; set
-   * `sync: 'confirmed'`. `task.id` and `task.createdAt` equal the existing
-   * record's, so the row neither remounts nor reorders (`AC-API-8`).
-   */
-  | { type: "add/confirm"; id: TaskId; task: ApiTask }
-  /** Final failure after the retry budget: remove the provisional row (`AC-API-7`). */
-  | { type: "add/rollback"; id: TaskId }
-  /**
-   * Optimistic delete: the row disappears now (`AC-API-9`). The orchestration
-   * in `lib/tasks/mutations.ts` keeps the prior record for rollback; the
-   * reducer does not.
-   */
-  | { type: "remove/optimistic"; id: TaskId }
-  /**
-   * Final failure: restore the prior record with `sync: 'confirmed'`. Its
-   * position follows from `AC-LIST-3`; nothing else is needed (`AC-API-9`).
-   */
-  | { type: "remove/rollback"; task: Task };
+  // --- Optimistic lifecycle (ADR-0004; AC-API-8, AC-API-9, AC-API-11) ---
+  | { type: "add/optimistic"; task: Task } // row appears now as syncing; id/createdAt are the values the request carries and the server echoes
+  | { type: "add/confirm"; id: TaskId; task: ApiTask } // reconcile on 201 by id, keeping id/createdAt so the row neither remounts nor reorders (AC-API-8)
+  | { type: "add/rollback"; id: TaskId } // final failure after the retry budget: remove the provisional row (AC-API-7)
+  | { type: "remove/optimistic"; id: TaskId } // row disappears now (AC-API-9); mutations.ts keeps the prior record for rollback, not the reducer
+  | { type: "remove/rollback"; task: Task }; // final failure: restore as confirmed, position following from AC-LIST-3 (AC-API-9)
 
 export type TaskActionType = TaskAction["type"];

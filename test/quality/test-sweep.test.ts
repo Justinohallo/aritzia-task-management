@@ -4,12 +4,12 @@ import path from "node:path";
 /**
  * AC-TEST-1. `ACCEPTANCE.md` is the universe of criterion IDs and `test/` is
  * where each one must be named — asserted from the source tree so it holds
- * on every push, not only on the day of a sweep. `AC-TEST-2..4` moved to a
- * `⚙` mark at T-19 (ARCH-07, `B-27`): the lint rules that replace their
- * meta-tests live in `eslint.config.mjs`, and this file no longer proves
- * them. AC-TEST-1 keeps a Jest test — a cross-check between this document
- * and the suite is genuinely a test — but derives its counts from the
- * document instead of hard-coding them (ADR-0006, amended).
+ * on every push, not only on the day of a sweep. `AC-TEST-2..4` carry a `⚙`
+ * mark: the lint rules that replace their meta-tests live in
+ * `eslint.config.mjs`, and this file no longer proves them. AC-TEST-1 keeps
+ * a Jest test — a cross-check between this document and the suite is
+ * genuinely a test — but derives its counts from the document instead of
+ * hard-coding them (ADR-0006, amended).
  */
 const ROOT = process.cwd();
 const ACCEPTANCE = readFileSync(path.join(ROOT, "docs", "ACCEPTANCE.md"), "utf8");

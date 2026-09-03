@@ -3,15 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 
 import { TaskForm } from "@/components/tasks/task-form";
-import { TasksProvider, useTasks } from "@/lib/tasks/provider";
+import { TasksProvider, useTasks } from "@/components/tasks/provider";
 import { STORAGE_KEY, TASK_TITLE_MAX_LENGTH } from "@/lib/tasks/schema";
 import { isOverdue } from "@/lib/tasks/validation";
 
-/**
- * Renders provider state so the form's effect is asserted where it lands.
- * The real list is T-05's; in this wave the shell holds a stub, so the probe
- * is the list.
- */
+/** Renders provider state so the form's effect is asserted where it lands, without the real list. */
 function Probe() {
   const tasks = useTasks();
   return (

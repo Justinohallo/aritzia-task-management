@@ -1,29 +1,20 @@
 "use client";
 
 /**
- * The add-task form — T-04 (ADR-0002, ADR-0003; `AC-ADD-1..7`).
+ * The add-task form (ADR-0002, ADR-0003; `AC-ADD-1..7`). Validation lives
+ * in `lib/tasks/validation.ts`; this component renders the outcome — each
+ * failing field marked `aria-invalid` and described by its own inline
+ * error (`AC-ADD-2`, `AC-ADD-3`, `AC-A11Y-2`), the browser's own validation
+ * off (`noValidate`) so every rule and message come from the one module.
  *
- * Validation lives in `lib/tasks/validation.ts`; this component renders the
- * outcome. Each failing field is marked `aria-invalid` and described by its
- * own inline error (`AC-ADD-2`, `AC-ADD-3`, `AC-A11Y-2`). The browser's own
- * validation is off (`noValidate`) so every rule and every message come from
- * the one module, and a past date is accepted (`AC-ADD-7`, `AM-4`).
+ * A valid task goes through the optimistic create in
+ * `lib/tasks/mutations.ts` (`AC-API-1`, `AC-API-8`): the fields clear and
+ * focus returns to the title as soon as the row is applied, but the submit
+ * control stays disabled until the request settles (`AC-ADD-8`,
+ * `AC-API-11`). A final failure is shown inline and the emptied fields are
+ * refilled so the task can be resubmitted (`AC-API-7`, `AC-API-12`).
  *
- * Wave 3 (T-08): a valid task goes through the optimistic create in
- * `lib/tasks/mutations.ts` (`AC-API-1`, `AC-API-8`). The fields clear and
- * focus returns to the title as soon as the row is applied — the user can
- * start typing the next task — but the submit control is disabled, and
- * says so, until the request settles (`AC-ADD-8`, `AC-API-11`). A final
- * failure is shown inline under the form, and the emptied fields are
- * refilled so the task can be resubmitted; the live region has already
- * announced the same message (`AC-API-7`, `AC-API-12`).
- *
- * `app/(protected)/tasks/page.tsx` imports `{ TaskForm }` from here; the
- * export name is the T-01 contract.
- *
- * Wave 4 (T-10, `AC-UI-2`): on a coarse pointer the fields and the submit
- * control grow to 44px; with a mouse they keep the primitive's default
- * height. Layout classes only — the semantics are T-09's.
+ * On a coarse pointer the fields and submit control grow to 44px (`AC-UI-2`).
  */
 import { Loader2Icon } from "lucide-react";
 import { useId, useRef, useState, type FormEvent } from "react";
@@ -40,11 +31,7 @@ import {
 } from "@/lib/tasks/validation";
 import type { Task } from "@/types/task";
 
-/**
- * A new, pending task. `id` and `createdAt` are assigned here, in the
- * browser, and echoed by the server (`AC-API-8`). The sync state is set by
- * the reducer when the row is applied.
- */
+// A new, pending task; id and createdAt are assigned here, in the browser, and echoed by the server (AC-API-8).
 function newTask(value: ValidTaskInput): Task {
   return {
     id: crypto.randomUUID(),
@@ -70,9 +57,7 @@ export function TaskForm() {
   const [errors, setErrors] = useState<TaskFieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
-  // The synchronous half of the double-submit guard (`AC-ADD-8`): a second
-  // Enter before React has re-rendered the disabled button lands here.
-  const inFlight = useRef(false);
+  const inFlight = useRef(false); // sync half of the double-submit guard (AC-ADD-8): a second Enter before re-render lands here
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -98,8 +83,7 @@ export function TaskForm() {
     setSubmitting(false);
     if (!outcome.ok) {
       setFailure(outcome.failure.message);
-      // Refill a field the user has not started on since, so the failed
-      // task can be resubmitted rather than retyped.
+      // Refill a field untouched since, so the failed task can be resubmitted rather than retyped.
       setTitle((current) => (current === "" ? task.title : current));
       setDueDate((current) => (current === "" ? task.dueDate : current));
     }
@@ -144,8 +128,7 @@ export function TaskForm() {
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
             className="pointer-coarse:h-11"
-            // iOS WebKit shows nothing in an empty date field; `globals.css`
-            // draws a placeholder while this attribute is present.
+            // iOS WebKit shows nothing in an empty date field; globals.css draws a placeholder while this is present.
             data-empty={dueDate === "" ? "" : undefined}
             aria-invalid={invalid("dueDate")}
             aria-describedby={describedBy("dueDate")}
