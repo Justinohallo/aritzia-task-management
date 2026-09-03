@@ -71,7 +71,7 @@ describe("createTask — apply → call → reconcile / rollback", () => {
     ]);
   });
 
-  it("AC-API-7: when the retry budget is exhausted the row is marked failed, rolled back, and rate limiting is named", async () => {
+  it("when the retry budget is exhausted the row is rolled back and rate limiting is named", async () => {
     const h = harness({ createTask: () => Promise.reject(new RateLimitedError(3, 4)) });
 
     const result = await createTask(h.deps, task);
@@ -138,7 +138,7 @@ describe("deleteTask — apply → call → rollback", () => {
     expect(h.announced.at(-1)).toEqual({ message: '"Order the lookbook" deleted.', assertive: false });
   });
 
-  it("AC-API-7: an exhausted retry budget on delete restores the row and names rate limiting", async () => {
+  it("an exhausted retry budget on delete restores the row and names rate limiting", async () => {
     const h = harness({ deleteTask: () => Promise.reject(new RateLimitedError(undefined, 4)) });
     const result = await deleteTask(h.deps, task);
     expect(h.types()).toEqual(["remove/optimistic", "remove/rollback"]);

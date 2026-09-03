@@ -82,7 +82,7 @@ describe("tasksReducer", () => {
       expect(row).toMatchObject({ id: b.id, createdAt: b.createdAt, completed: true, sync: "confirmed" });
     });
 
-    it("AC-API-7: add/rollback removes the provisional row", () => {
+    it("add/rollback removes the provisional row", () => {
       const s = tasksReducer([a, syncing], { type: "add/rollback", id: b.id });
       expect(s).toEqual([a]);
       expect(tasksReducer(s, { type: "add/rollback", id: b.id })).toBe(s);

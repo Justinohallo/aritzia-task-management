@@ -1,7 +1,7 @@
 import { CREDENTIAL_RULE, MIN_PASSWORD_LENGTH, validateCredentials } from "@/lib/auth/credentials";
 
 describe("validateCredentials", () => {
-  it("AC-AUTH-2: any non-empty username with a password of the minimum length passes, username trimmed", () => {
+  it("any non-empty username with a password of the minimum length passes, username trimmed", () => {
     const result = validateCredentials({ username: "  ada  ", password: "x".repeat(MIN_PASSWORD_LENGTH) });
     expect(result).toEqual({ ok: true, username: "ada" });
   });
