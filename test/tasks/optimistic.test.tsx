@@ -8,7 +8,7 @@ import { TaskList } from "@/components/tasks/task-list";
 import { LiveRegion } from "@/components/ui/live-region";
 import { createApiClient, type ApiClient } from "@/lib/api/client";
 import { ApiClientContext } from "@/lib/tasks/mutations";
-import { TasksProvider } from "@/lib/tasks/provider";
+import { TasksProvider } from "@/components/tasks/provider";
 import { STORAGE_KEY, STORAGE_VERSION } from "@/lib/tasks/schema";
 import { handlersFor, rateLimited, serverError } from "@/test/msw/handlers";
 import { server } from "@/test/msw/server";
@@ -16,9 +16,9 @@ import { TASKS_ENDPOINT, type ApiErrorBody, type CreateTaskRequest, type CreateT
 import type { Task } from "@/types/task";
 
 /**
- * T-08 — the optimistic lifecycle as the user sees it: form, list and the
- * one live region mounted together, the network intercepted by MSW so the
- * real `fetch` path runs (ADR-0006). The client under test has an instant
+ * The optimistic lifecycle as the user sees it: form, list and the one live
+ * region mounted together, the network intercepted by MSW so the real
+ * `fetch` path runs (ADR-0006). The client under test has an instant
  * `sleep` and a fixed jitter draw, so a scripted run of `429`s exhausts the
  * retry budget in milliseconds and the outcome is the same every run.
  */

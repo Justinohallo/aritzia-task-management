@@ -57,7 +57,7 @@ describe("tasksReducer", () => {
     expect(tasksReducer(s, { type: "setCompleted", id: b.id, completed: true })).toBe(s);
   });
 
-  describe("T-08 optimistic lifecycle", () => {
+  describe("optimistic lifecycle", () => {
     const syncing = makeOtherTask({ sync: "syncing" });
 
     it("AC-API-8: add/optimistic appends the row as syncing before any response, and is idempotent by id", () => {

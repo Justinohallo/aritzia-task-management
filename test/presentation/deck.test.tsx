@@ -5,12 +5,12 @@ import PresentationPage from "@/app/presentation/page";
 import { PPTX_PATH, SLIDES } from "@/app/presentation/slides";
 
 /**
- * `/presentation` (T-18). No criterion in ACCEPTANCE.md names the deck route
- * (B-28), so these tests carry no ID: they are a smoke test that the page
- * the presentation is given from renders, navigates, and offers the file
- * the download button promises. They are not evidence for any criterion.
+ * No criterion in ACCEPTANCE.md names the deck route, so these tests carry
+ * no ID: they are a smoke test that the page the presentation is given from
+ * renders, navigates, and offers the file the download button promises.
+ * They are not evidence for any criterion.
  */
-describe("/presentation renders the T-14 deck", () => {
+describe("/presentation renders the deck", () => {
   beforeEach(() => {
     // The hash is the deck's position; jsdom keeps it between tests.
     window.history.replaceState(null, "", "/presentation");

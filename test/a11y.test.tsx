@@ -7,7 +7,7 @@ import TasksPage from "@/app/(protected)/tasks/page";
 import LoginPage from "@/app/login/page";
 import { neighbourOf } from "@/components/tasks/task-list";
 import { createApiClient, type ApiClient } from "@/lib/api/client";
-import { AuthProvider } from "@/lib/auth/provider";
+import { AuthProvider } from "@/components/auth/provider";
 import { AUTH_STORAGE_VERSION, writeSession } from "@/lib/auth/session";
 import { ApiClientContext } from "@/lib/tasks/mutations";
 import { STORAGE_KEY, STORAGE_VERSION } from "@/lib/tasks/schema";
@@ -16,13 +16,11 @@ import { server } from "@/test/msw/server";
 import type { Task } from "@/types/task";
 
 /**
- * T-09 — the accessibility pass (`AC-A11Y-1..6`), asserted on the two pages
- * as the user gets them: the login page, and the tasks page inside the
- * protected layout with the one live region mounted. The components under
- * these tests were built by T-02, T-04, T-05 and T-08 with their semantics
- * in place; this file is where each criterion is named and proved, and
- * where the one T-09 behaviour — focus following a row that leaves the
- * view — is tested.
+ * The accessibility pass (`AC-A11Y-1..6`), asserted on the two pages as the
+ * user gets them: the login page, and the tasks page inside the protected
+ * layout with the one live region mounted. This file is where each
+ * criterion is named and proved, including focus following a row that
+ * leaves the view.
  *
  * `AC-A11Y-4` is also a manual keyboard walk in a real browser, recorded
  * as `◉` per the `ACCEPTANCE.md` legend, because jsdom does not paint a

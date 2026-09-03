@@ -1,64 +1,39 @@
 "use client";
 
 /**
- * Auth state provider — T-02 (ADR-0005; `AC-AUTH-2..9`).
- *
- * One provider over `sessionStorage`, the session-scoped half of the brief's
- * two storage lifetimes (`AC-AUTH-10`; the task list is T-03's provider over
- * `localStorage`). `sessionStorage` is the source of truth: the provider
- * reads it once after mount and then mirrors every change it makes.
- *
- * The read happens in an effect, after mount, for the same reason T-03's
- * does: the first render on the server and on the client must agree, and
- * no browser API is touched during render. Until that read has happened the
- * status is `unknown`, and the guards in `lib/auth/guards.tsx` render
- * nothing for it — which is what `AC-AUTH-7` requires of a protected route.
- *
- * Mounted once, in `app/layout.tsx` (T-20): every route reads the same
- * instance, so navigating between them cannot disagree about auth state.
+ * Auth state provider (ADR-0005; `AC-AUTH-2..9`). One provider over
+ * `sessionStorage`, the session-scoped half of the brief's two storage
+ * lifetimes (`AC-AUTH-10`; the task list's provider covers `localStorage`).
+ * `sessionStorage` is the source of truth: read once in an effect after
+ * mount — so the first render agrees on server and client — then mirrored
+ * on every change. Until that read happens the status is `unknown`, and
+ * the guards in `components/auth/guards.tsx` render nothing for it
+ * (`AC-AUTH-7`). Mounted once, in `app/layout.tsx`.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
 
 import { validateCredentials, type CredentialField, type Credentials } from "@/lib/auth/credentials";
 import { AUTH_STORAGE_VERSION, clearSession, readSession, writeSession, type AuthRecord } from "@/lib/auth/session";
 
-/** `unknown` until the post-mount read of `sessionStorage` has been applied. */
-export type AuthStatus = "unknown" | "authenticated" | "unauthenticated";
+export type AuthStatus = "unknown" | "authenticated" | "unauthenticated"; // unknown until the post-mount sessionStorage read
 
 export type LoginResult =
   | { ok: true }
-  | {
-      ok: false;
-      /** The field to mark invalid, when the failure is a field's. */
-      field?: CredentialField;
-      message: string;
-    };
+  | { ok: false; field?: CredentialField; message: string }; // field: which one to mark invalid, when it's a field's failure
 
 export interface AuthContextValue {
   status: AuthStatus;
-  /** The signed-in user's record; `null` unless `status` is `authenticated`. */
-  user: AuthRecord | null;
-  /**
-   * Validate the credentials and, if they pass, start a session. Writes
-   * nothing on failure (`AC-AUTH-3`) and never stores the password
-   * (`AC-AUTH-9`). Navigation is the caller's job.
-   */
-  login: (credentials: Credentials) => LoginResult;
-  /** End the session: the record is removed from `sessionStorage` (`AC-AUTH-6`). */
-  logout: () => void;
+  user: AuthRecord | null; // null unless status is authenticated
+  login: (credentials: Credentials) => LoginResult; // writes nothing on failure (AC-AUTH-3) or the password (AC-AUTH-9)
+  logout: () => void; // removes the record from sessionStorage (AC-AUTH-6)
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export interface AuthProviderProps {
   children: ReactNode;
-  /**
-   * Override the storage read and written. Tests inject a stub; the app
-   * leaves it unset and the adapter resolves `window.sessionStorage` itself.
-   */
-  storage?: Storage;
-  /** Clock for `authenticatedAt`. Tests inject a fixed one. */
-  now?: () => Date;
+  storage?: Storage; // override the read/written storage; unset resolves window.sessionStorage
+  now?: () => Date; // clock for authenticatedAt; tests inject a fixed one
 }
 
 // `undefined` = not read yet; `null` = read, and there is no session.
@@ -72,8 +47,7 @@ export function AuthProvider({ children, storage, now = () => new Date() }: Auth
   const [record, setRecord] = useReducer(recordReducer, undefined);
 
   useEffect(() => {
-    // Post-mount only: the read is a browser API and must stay out of render.
-    setRecord(readSession(storage));
+    setRecord(readSession(storage)); // post-mount only: a browser API, kept out of render
   }, [storage]);
 
   const login = useCallback<AuthContextValue["login"]>(
@@ -116,11 +90,7 @@ export function AuthProvider({ children, storage, now = () => new Date() }: Auth
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/**
- * The only sanctioned way to read or change auth state. Throws a pointed
- * error outside `<AuthProvider>`, where a missing provider should surface:
- * at the first render, with the fix in the message.
- */
+/** The only sanctioned way to read or change auth state; throws a pointed error at the first render outside `<AuthProvider>`. */
 export function useAuth(): AuthContextValue {
   const value = useContext(AuthContext);
   if (value === null) {

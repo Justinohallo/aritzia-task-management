@@ -1,16 +1,11 @@
 /**
- * The browser-facing Route Handlers, as functions (ADR-0004, as amended).
- *
- * `app/api/tasks/route.ts` and `app/api/tasks/[id]/route.ts` export these
- * bound to {@link productionDeps}. Each handler validates the request,
+ * The browser-facing Route Handlers, as functions (ADR-0004, as amended),
+ * exported bound to {@link productionDeps}. Each validates the request,
  * reads the private key from server environment, presents it to the
- * upstream, and passes the upstream's status and body through unchanged —
- * a `401` when the environment lacks the key included (`AC-API-4`), the
- * `Retry-After` header on a `429` included (`AC-API-5`).
- *
- * The browser's request carries no key and none is read from it: the body
- * schema strips unknown fields, and no header is consulted (`AC-API-3`).
- * Dependencies are injected so the handlers are tested without touching
+ * upstream, and passes its status and body through unchanged — `401`
+ * (`AC-API-4`) and `Retry-After` (`AC-API-5`) included. The body schema
+ * strips unknown fields, so the browser's request carries no key
+ * (`AC-API-3`). Dependencies are injected for testing without touching
  * `process.env` or the shared upstream.
  */
 import { z } from "zod";
@@ -20,26 +15,16 @@ import { getUpstream } from "@/lib/server/upstream";
 import { persistedTaskSchema, taskIdSchema } from "@/lib/tasks/schema";
 import { RETRY_AFTER_HEADER, type ApiErrorBody, type Upstream, type UpstreamResult } from "@/types/api";
 
-// ---------------------------------------------------------------------------
-// Request validation — composed from the frozen field schemas, never restated
-// ---------------------------------------------------------------------------
+// --- Request validation — composed from the frozen field schemas, never restated ---
 
-/**
- * `POST /api/tasks` body: the persisted task's fields minus `completed`,
- * which is exactly `CreateTaskRequest` (`types/api.ts`) — deriving it here
- * rather than restating it is what keeps the two from drifting. Unknown
- * keys are stripped, so nothing the browser adds — an `apiKey` field, say —
- * travels any further than this line.
- */
+/** `POST /api/tasks` body: the persisted task's fields minus `completed`, exactly `CreateTaskRequest`, derived rather than restated. Unknown keys are stripped. */
 export const createTaskRequestSchema = persistedTaskSchema.omit({ completed: true });
 
 function describeIssues(error: z.ZodError): string {
   return error.issues.map((issue) => `${issue.path.join(".") || "body"}: ${issue.message}`).join("; ");
 }
 
-// ---------------------------------------------------------------------------
-// Responses
-// ---------------------------------------------------------------------------
+// --- Responses ---
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -57,18 +42,14 @@ function passThrough<TBody>(result: UpstreamResult<TBody>): Response {
   return Response.json(result.body, { status: result.status, headers });
 }
 
-// ---------------------------------------------------------------------------
-// Handlers
-// ---------------------------------------------------------------------------
+// --- Handlers ---
 
 export interface HandlerDeps {
   upstream: Upstream;
-  /** Read per request from server environment; `undefined` when absent. */
-  apiKey: () => string | undefined;
+  apiKey: () => string | undefined; // read per request from server environment; undefined when absent
 }
 
-/** Next's dynamic-segment context for `app/api/tasks/[id]/route.ts`. */
-export interface DeleteTaskContext {
+export interface DeleteTaskContext { // Next's dynamic-segment context for app/api/tasks/[id]/route.ts
   params: Promise<{ id: string }>;
 }
 

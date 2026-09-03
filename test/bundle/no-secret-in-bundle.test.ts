@@ -6,9 +6,6 @@ import path from "node:path";
  * production build output — the only test in the suite that proves an
  * absence (ADR-0006). It runs under `jest.bundle.config.mjs`, after
  * `next build`, and fails rather than skips when there is no build.
- *
- * T-01 owns the config and this scaffold; T-06 owns the criterion, and the
- * server-side read of the key that makes the search meaningful.
  */
 const STATIC_DIR = path.join(process.cwd(), ".next", "static");
 const KEY_VARIABLE_NAME = "TASKS_API_KEY";

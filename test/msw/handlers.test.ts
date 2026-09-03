@@ -11,10 +11,11 @@ const request: CreateTaskRequest = {
 
 /**
  * Proves the network boundary of the test toolchain — jsdom, MSW and the
- * real `fetch` — and the echo semantics of the default handlers, which T-07
- * and T-08 build on. These are not the criteria tests for `AC-API-*`.
+ * real `fetch` — and the echo semantics of the default handlers, which the
+ * client and mutation tests build on. These are not the criteria tests for
+ * `AC-API-*`.
  */
-describe("MSW handlers for the T-01 API contract", () => {
+describe("MSW handlers for the API contract", () => {
   it("default create handler echoes the client's id and createdAt with 201", async () => {
     const response = await fetch(TASKS_ENDPOINT, {
       method: "POST",

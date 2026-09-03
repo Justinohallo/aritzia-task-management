@@ -1,11 +1,11 @@
 /**
- * MSW handlers for `types/api.ts` — frozen at T-01 (`docs/TASKS.md`).
+ * MSW handlers for `types/api.ts`.
  *
  * {@link handlers} are the defaults, registered by `test/msw/server.ts` for
  * every test: create echoes, delete acknowledges. {@link handlersFor} builds
  * a scripted sequence — a `429` with a chosen `Retry-After`, then a `201`, … —
- * so T-07 and T-08 drive repeated rate limits through `server.use(...)`
- * without editing this file (ARCH-03, B-10).
+ * so a test drives repeated rate limits through `server.use(...)` without
+ * editing this file.
  */
 import { http, HttpResponse, type HttpHandler } from "msw";
 

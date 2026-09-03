@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The login form — T-02 (ADR-0005; `AC-AUTH-1..3`, `AC-AUTH-9`).
+ * The login form (ADR-0005).
  *
  * Validation is the provider's (`login()`); this component renders the
  * outcome. A failure is shown in a `role="alert"` region and the offending
@@ -17,8 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CREDENTIAL_RULE, MIN_PASSWORD_LENGTH, type CredentialField } from "@/lib/auth/credentials";
-import { TASKS_PATH } from "@/lib/auth/guards";
-import { useAuth } from "@/lib/auth/provider";
+import { TASKS_PATH } from "@/components/auth/guards";
+import { useAuth } from "@/components/auth/provider";
 
 type FormError = { field?: CredentialField; message: string };
 

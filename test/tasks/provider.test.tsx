@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { renderToString } from "react-dom/server";
 
-import { TasksProvider, useTaskDispatch, useTasks, useTasksHydrated } from "@/lib/tasks/provider";
+import { TasksProvider, useTaskDispatch, useTasks, useTasksHydrated } from "@/components/tasks/provider";
 import { STORAGE_KEY } from "@/lib/tasks/schema";
 import { toEnvelope } from "@/lib/tasks/storage";
 import type { Task } from "@/types/task";

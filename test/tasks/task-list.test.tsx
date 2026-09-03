@@ -6,7 +6,7 @@ import { filterHref, matchesFilter, parseFilter } from "@/components/tasks/task-
 import { formatDueDate } from "@/components/tasks/task-item";
 import { TaskList, sortTasks } from "@/components/tasks/task-list";
 import { LiveRegion } from "@/components/ui/live-region";
-import { TasksProvider } from "@/lib/tasks/provider";
+import { TasksProvider } from "@/components/tasks/provider";
 import { STORAGE_KEY, STORAGE_VERSION } from "@/lib/tasks/schema";
 import { localToday } from "@/lib/tasks/validation";
 import type { Task } from "@/types/task";

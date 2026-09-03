@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * Who is signed in, and the way out — T-02 (`AC-AUTH-6`).
+ * Who is signed in, and the way out (`AC-AUTH-6`).
  *
  * Rendered inside {@link RequireAuth}, so `user` is always set here. Logging
  * out only clears the session; the guard sees the status change and does the
  * redirect, so there is one redirect mechanism, not two.
  */
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth/provider";
+import { useAuth } from "@/components/auth/provider";
 
 export function SessionBar() {
   const { user, logout } = useAuth();

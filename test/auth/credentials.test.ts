@@ -26,7 +26,7 @@ describe("validateCredentials", () => {
     expect(validateCredentials({ username: "ada", password: padded })).toEqual({ ok: true, username: "ada" });
   });
 
-  it("AM-11: the rule shown on the page states the minimum length", () => {
+  it("the rule shown on the page states the minimum length", () => {
     expect(CREDENTIAL_RULE).toContain(String(MIN_PASSWORD_LENGTH));
   });
 });

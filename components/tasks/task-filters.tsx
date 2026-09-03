@@ -1,18 +1,11 @@
 "use client";
 
 /**
- * The All / Pending / Completed filter — T-05 (`AC-FILT-1..5`).
- *
- * The active filter is **held in the URL query string**, not in component
- * state: `?filter=completed` is shareable, survives a reload, and the back
- * button walks through filter changes because every change is a `push`
- * (`AC-FILT-4`). Nothing is stored anywhere else, so there is one source of
- * truth and no way for it to disagree with the address bar.
- *
- * `All` is the default and is written as the bare pathname: a filter that
- * is not in the URL is `all`. An unrecognised value also reads as `all` —
- * a hand-edited URL is untrusted input and fails safe rather than showing
- * nothing.
+ * The All / Pending / Completed filter (`AC-FILT-1..5`). The active filter
+ * is **held in the URL query string**, not component state: shareable,
+ * survives a reload, and the back button walks through changes because
+ * every change is a `push` (`AC-FILT-4`). `All` is the bare pathname; an
+ * unrecognised value also reads as `all` — a hand-edited URL fails safe.
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
@@ -20,11 +13,9 @@ import { useCallback } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { FILTERS, isFilter, type Filter } from "@/types/task";
 
-/** The query-string key that carries the filter. */
 export const FILTER_PARAM = "filter";
 
-/** Display labels, keyed by value. `AC-FILT-5` names the active one. */
-export const FILTER_LABELS: Record<Filter, string> = {
+export const FILTER_LABELS: Record<Filter, string> = { // AC-FILT-5 names the active one
   all: "All",
   pending: "Pending",
   completed: "Completed",
@@ -46,11 +37,7 @@ export function matchesFilter(filter: Filter, completed: boolean): boolean {
   return filter === "all" || (filter === "completed") === completed;
 }
 
-/**
- * Read the active filter from the URL and change it through the router.
- * `setFilter` pushes a history entry, so the back button returns to the
- * previous filter (`AC-FILT-4`).
- */
+/** Read the active filter from the URL; `setFilter` pushes a history entry, so the back button returns to the previous filter (`AC-FILT-4`). */
 export function useTaskFilter(): [Filter, (next: Filter) => void] {
   const searchParams = useSearchParams();
   const pathname = usePathname() ?? "/tasks";
@@ -72,11 +59,7 @@ export interface TaskFiltersProps {
   onChange: (next: Filter) => void;
 }
 
-/**
- * A single-select toggle group. Radix renders the items as `role="radio"`
- * with `aria-checked`, so the active filter is exposed to assistive
- * technology as a state and not as a colour.
- */
+/** A single-select toggle group; Radix renders `role="radio"`/`aria-checked`, so the active filter is a state, not a colour. */
 export function TaskFilters({ value, onChange }: TaskFiltersProps) {
   return (
     <ToggleGroup
@@ -86,9 +69,7 @@ export function TaskFilters({ value, onChange }: TaskFiltersProps) {
       value={value}
       aria-label="Filter tasks"
       onValueChange={(next) => {
-        // Radix reports "" when the active item is clicked again. The filter
-        // is never "none": clicking the active one leaves it active.
-        if (isFilter(next)) onChange(next);
+        if (isFilter(next)) onChange(next); // Radix reports "" on re-click; the filter is never "none"
       }}
     >
       {FILTERS.map((filter) => (

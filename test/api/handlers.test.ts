@@ -161,10 +161,7 @@ describe("AC-API-4, AC-API-5: the upstream's status and body pass through unchan
   });
 });
 
-/**
- * AC-API-13: a malformed request is 400 invalid_request and never reaches
- * the upstream. Built in T-06; the describe previously cited B-21.
- */
+/** AC-API-13: a malformed request is 400 invalid_request and never reaches the upstream. */
 describe("AC-API-13: the Route Handler rejects a malformed request with 400 invalid_request", () => {
   async function expectInvalid(response: Response, stub: ReturnType<typeof stubUpstream>) {
     expect(response.status).toBe(400);

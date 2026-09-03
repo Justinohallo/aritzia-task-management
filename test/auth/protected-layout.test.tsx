@@ -9,9 +9,9 @@ import ProtectedLayout from "@/app/(protected)/layout";
 import TasksPage from "@/app/(protected)/tasks/page";
 import LoginPage from "@/app/login/page";
 import { announce } from "@/components/ui/live-region";
-import { AuthProvider } from "@/lib/auth/provider";
+import { AuthProvider } from "@/components/auth/provider";
 import { AUTH_STORAGE_KEY, AUTH_STORAGE_VERSION, writeSession } from "@/lib/auth/session";
-import { useTasks } from "@/lib/tasks/provider";
+import { useTasks } from "@/components/tasks/provider";
 
 const mockRouter = { replace: jest.fn(), push: jest.fn(), prefetch: jest.fn(), back: jest.fn() };
 jest.mock("next/navigation", () => ({
@@ -172,7 +172,7 @@ describe("app/(protected)/layout.tsx", () => {
     expect(tasksPage).not.toMatch(/lib\/auth/);
   });
 
-  it("mounts <LiveRegion /> once, inside the guard, so later tasks announce through it (T-01 contract, B-07)", () => {
+  it("mounts <LiveRegion /> once, inside the guard, so later announcements have somewhere to land", () => {
     signIn();
     renderProtected();
     expect(screen.getAllByRole("status")).toHaveLength(1);
