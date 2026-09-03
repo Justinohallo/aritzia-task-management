@@ -1,6 +1,6 @@
 # ACCEPTANCE.md — testable criteria
 
-> **Status:** verified by T-13 (QA) on 2026-09-02 against `main` d3070fa and its deployed build. 72 criteria `☑`, 6 `◉`, 0 `☐`, 1 `◐` (`AC-DEP-1`, the real-phone walk, `B-24`). The mark beside each criterion names the test or the procedure that earns it; nothing else does.
+> **Status:** re-verified by T-22 (QA) on 2026-09-03 against `main` 2f58e27, independently of T-13's original pass and of the T-19–T-21 optimisation sessions. 64 criteria `☑`, 8 `⚙`, 6 `◉`, 0 `☐`, 1 `◐` (`AC-DEP-1`, the real-phone walk, `B-24`, unchanged — no deployment work occurred this pass). The mark beside each criterion names the test, tooling rule, or procedure that earns it; nothing else does. Full re-walk: typecheck, lint, 277 tests in 28 suites (net down from T-13's 299/29 — T-19 deleted 33 meta-tests and added 5 rewritten ones, T-20 consolidated some multiply-cited files), production build, and the bundle test all pass on `main` 2f58e27.
 > **Companion to:** [`PROJECT.md`](PROJECT.md) · [`TASKS.md`](TASKS.md) · [`adr/`](adr/)
 
 Every requirement in Aritzia's brief is decomposed here into numbered
@@ -26,11 +26,13 @@ could not have one.)*
 toolchain rather than a behaviour of the application, and for no others:
 `AC-QUAL-1..2`, `AC-CI-1`, `AC-UI-5..6`, `AC-TEST-2..4`. Each is marked `⚙`
 only with the lint rule, compiler flag, runner option or CI step that makes
-it impossible to violate written next to it, and only once T-19 has moved
-the proof there. Until then the `☑` marks below stand. A test that spawns
-the linter to read the linter's config, or regex-parses the CI file, proves
-nothing the tool does not already enforce and is not a valid `☑` for these
-eight after T-19. *(ARCH-07, `B-27`.)*
+it impossible to violate written next to it. A test that spawns the linter
+to read the linter's config, or regex-parses the CI file, proves nothing the
+tool does not already enforce and is not a valid `☑` for these eight. T-19
+moved the proof for all eight into `eslint.config.mjs`, `jest.config.mjs`,
+`tsconfig.json` and `.github/workflows/ci.yml`, deleting the Jest meta-tests
+that used to carry the `☑` mark; T-22 confirms each rule is in force on
+`main` and writes the `⚙` marks below. *(ARCH-07, `B-27`.)*
 
 ---
 
@@ -65,7 +67,7 @@ And the password field is of type password
 ```
 
 #### AC-AUTH-2 — Valid credentials authenticate and redirect
-**Status:** ☑ — `test/auth/login-page.test.tsx` — "AC-AUTH-2: valid credentials write an auth record to sessionStorage and redirect to /tasks"; also `test/auth/provider.test.tsx`, `test/auth/session.test.ts`, `test/auth/credentials.test.ts`
+**Status:** ☑ — `test/auth/login-page.test.tsx` — "AC-AUTH-2: valid credentials write an auth record to sessionStorage and redirect to /tasks"; also `test/auth/provider.test.tsx`. *(T-22: T-20 consolidated this proof to two files; `test/auth/session.test.ts` and `test/auth/credentials.test.ts` no longer name it, dropped from the citation.)*
 ```gherkin
 Given I am on /login
 When I submit valid credentials
@@ -490,7 +492,7 @@ And it does not retry immediately
 ```
 
 #### AC-API-7 — Retries are bounded and failures surface
-**Status:** ☑ — `test/tasks/optimistic.test.tsx` — "AC-API-7: when the API responds 429 repeatedly, retrying stops at the budget, rate limiting is named, and the row is rolled back"; `test/api/client.test.ts`, `test/api/retry.test.ts`, `test/tasks/mutations.test.ts`
+**Status:** ☑ — `test/tasks/optimistic.test.tsx` — "AC-API-7: when the API responds 429 repeatedly, retrying stops at the budget, rate limiting is named, and the row is rolled back"; `test/api/client.test.ts`, `test/api/retry.test.ts`. *(T-22: T-20 consolidated this proof to three files; `test/tasks/mutations.test.ts` no longer names it, dropped from the citation.)*
 ```gherkin
 Given the API responds 429 repeatedly
 When the retry budget is exhausted
@@ -570,7 +572,7 @@ And the key is not presented
 ## R9 · State management
 
 #### AC-STATE-1 — A single provider owns task state
-**Status:** ☑ — `test/tasks/provider.test.tsx` — "AC-STATE-1: components read state and dispatch through the typed hooks" and "AC-STATE-1: the hooks throw a pointed error outside the provider"; `test/auth/protected-layout.test.tsx` "AC-STATE-1: mounts <TasksProvider> inside RequireAuth …"; `test/tasks/reducer.test.ts`
+**Status:** ☑ — `test/tasks/provider.test.tsx` — "AC-STATE-1: components read state and dispatch through the typed hooks" and "AC-STATE-1: the hooks throw a pointed error outside the provider"; `test/auth/protected-layout.test.tsx` "AC-STATE-1: mounts <TasksProvider> inside RequireAuth so task hooks work on protected pages"; `test/tasks/reducer.test.ts`
 ```gherkin
 Given the application renders
 Then task state is provided by one Context provider backed by a reducer
@@ -625,7 +627,7 @@ And the console reports no hydration mismatch
 ## R8 · Component library
 
 #### AC-UI-5 — UI is built from the chosen library's primitives
-**Status:** ☑ — `test/quality/component-boundary.test.ts` — "AC-UI-5: buttons, inputs, checkboxes, selects and dialogs exist as shadcn primitives", "AC-UI-5: no native control is hand-rolled alongside the primitives", "AC-UI-5: the controls the domain renders are imported from components/ui"
+**Status:** ⚙ — `eslint.config.mjs`, the `no-restricted-syntax` rule scoped to `app/**/*.{ts,tsx}` and `components/tasks/**/*.{ts,tsx}` that forbids a `JSXOpeningElement` named `button`, `input`, `select`, `dialog` or `textarea` outside `components/ui/**`. *(T-22: moved from `☑`/`test/quality/component-boundary.test.ts`, deleted by T-19; ARCH-07, `B-26`.)*
 ```gherkin
 Given the interface is implemented
 Then every control the interface renders comes from a shadcn/ui primitive
@@ -633,17 +635,17 @@ And no equivalent control is hand-rolled alongside the primitives
 ```
 > *ARCH-07 (`B-26`):* the earlier wording named selects and dialogs, and its
 > test asserted that those files exist. No screen renders either, so the
-> criterion mandated dead code. It now asks what the brief asks. `⚙`-eligible
-> after T-19: a lint rule on JSX element names outside `components/ui/**`.
+> criterion mandated dead code. It now asks what the brief asks, proved by a
+> lint rule on JSX element names outside `components/ui/**` since T-19.
 
 #### AC-UI-6 — A component boundary exists
-**Status:** ☑ — `test/quality/component-boundary.test.ts` — "AC-UI-6: no primitive imports from the task domain" and "AC-UI-6: generic primitives live in components/ui and task-domain components in components/tasks"
+**Status:** ⚙ — `eslint.config.mjs`, the `no-restricted-imports` rule scoped to `components/ui/**/*.{ts,tsx}` that forbids importing from `@/components/tasks`, `@/lib/tasks`, `@/lib/auth`, `@/lib/api`, `@/types`, `@/app`, or any relative `../*` path escaping the directory. *(T-22: moved from `☑`/`test/quality/component-boundary.test.ts`, deleted by T-19; ARCH-07.)*
 ```gherkin
 Given the component tree is inspected
 Then generic, app-agnostic primitives live separately from task-domain components
 And no primitive imports from the task domain
 ```
-> *ARCH-07:* `⚙`-eligible after T-19 — `no-restricted-imports` scoped to
+> *ARCH-07:* proved since T-19 by `no-restricted-imports` scoped to
 > `components/ui/**`.
 > This is the seam described in [ADR-0003](adr/0003-component-library.md) —
 > the line along which a `packages/ui` workspace would be extracted if a
@@ -740,24 +742,24 @@ Then no violations are reported
 ## R4 · TypeScript quality
 
 #### AC-QUAL-1 — Strict TypeScript, clean typecheck
-**Status:** ☑ — `test/quality/typescript.test.ts` — "AC-QUAL-1: tsconfig enables strict mode", "AC-QUAL-1: the typecheck script is a full tsc pass", "AC-QUAL-1: no explicit any appears in application source". `npm run typecheck` and `npm run lint` clean on `main` d3070fa, 2026-09-02
+**Status:** ⚙ — `tsconfig.json` `"strict": true`; the `typecheck` script (`tsc --noEmit`) in `package.json`; `eslint.config.mjs` `@typescript-eslint/no-explicit-any: "error"`. `npm run typecheck` and `npm run lint` clean on `main` 2f58e27, 2026-09-03. *(T-22: moved from `☑`/`test/quality/typescript.test.ts`, deleted by T-19; ARCH-07.)*
 ```gherkin
 Given the repository
 Then TypeScript strict mode is enabled
 And the typecheck script passes with no errors
 And no explicit any appears in application source
 ```
-> *ARCH-07:* `⚙`-eligible after T-19 — `tsconfig.json` `strict`, the
+> *ARCH-07:* proved since T-19 by `tsconfig.json` `strict`, the
 > `typecheck` script, and `@typescript-eslint/no-explicit-any`.
 
 #### AC-QUAL-2 — Suppressions are justified
-**Status:** ☑ — `test/quality/typescript.test.ts` — "AC-QUAL-2: no @ts-ignore, and every @ts-expect-error carries a reason"
+**Status:** ⚙ — `eslint.config.mjs` `@typescript-eslint/ban-ts-comment`: `"ts-ignore": true` and `"ts-nocheck": true` (forbidden outright), `"ts-expect-error": "allow-with-description"` with `minimumDescriptionLength: 10`. *(T-22: moved from `☑`/`test/quality/typescript.test.ts`, deleted by T-19; ARCH-07.)*
 ```gherkin
 Given a type suppression exists
 Then it is @ts-expect-error rather than @ts-ignore
 And it carries a comment explaining why
 ```
-> *ARCH-07:* `⚙`-eligible after T-19 — `@typescript-eslint/ban-ts-comment`
+> *ARCH-07:* proved since T-19 by `@typescript-eslint/ban-ts-comment`
 > with `allow-with-description`.
 
 ---
@@ -765,7 +767,7 @@ And it carries a comment explaining why
 ## R6 · Tests
 
 #### AC-TEST-1 — Every criterion has a test
-**Status:** ☑ — `test/quality/test-sweep.test.ts` — "AC-TEST-1: every criterion outside the manual-only seven is named by a test or describe block" and "AC-TEST-1: the manual-only set is exactly the seven the legend names". QA cross-check 2026-09-02: every `it`/`test` block under `test/` contains an assertion; none names an ID and asserts nothing.
+**Status:** ☑ — `test/quality/test-sweep.test.ts` — "AC-TEST-1: every criterion outside the manual-only and tooling-only sets is named by a test or describe block", "AC-TEST-1: the manual-only (◉) and tooling-only (⚙) sets match the counts the legend itself claims", "AC-TEST-1: every criterion the legend exempts is a criterion ACCEPTANCE.md actually defines", "AC-TEST-1: no test names a criterion ACCEPTANCE.md does not define", "AC-TEST-1: ACCEPTANCE.md defines no duplicate criterion IDs". QA cross-check 2026-09-03: every `it`/`test` block under `test/` contains an assertion; none names an ID and asserts nothing. *(T-22: T-19 rewrote this file to derive the manual-only/tooling-only counts from this document's own legend prose instead of hard-coding 79/seven; citation updated to the current test names. This criterion stays `☑`, not `⚙` — `B-27`.)*
 ```gherkin
 Given this document
 Then each criterion ID appears in at least one test name or describe block
@@ -774,32 +776,32 @@ And a criterion with neither is not marked met
 ```
 
 #### AC-TEST-2 — Tests assert behaviour through accessible queries
-**Status:** ☑ — `test/quality/test-sweep.test.ts` — "AC-TEST-2: every component test that queries the screen does so by role, label or text"
+**Status:** ⚙ — `eslint.config.mjs`, scoped to `test/**/*.{ts,tsx}`: `eslint-plugin-testing-library`'s `no-container`, `no-manual-cleanup` and `prefer-screen-queries`; `no-restricted-syntax` forbidding `toHaveClass`, reading `.className`, a class-selector `querySelector`/`querySelectorAll`, `.instance`, and `.state`. *(T-22: moved from `☑`/`test/quality/test-sweep.test.ts` meta-test, deleted by T-19; ARCH-07.)*
 ```gherkin
 Given a component test
 Then it queries by role, label, or visible text
 And it does not assert on implementation details such as internal state or class names
 ```
-> *ARCH-07:* `⚙`-eligible after T-19 — `eslint-plugin-testing-library` and a
+> *ARCH-07:* proved since T-19 by `eslint-plugin-testing-library` and a
 > `no-restricted-syntax` rule on class-name and instance assertions in `test/**`.
 
 #### AC-TEST-3 — No snapshot-only coverage
-**Status:** ☑ — `test/quality/test-sweep.test.ts` — "AC-TEST-3: no test file uses a snapshot assertion" and "AC-TEST-3: no __snapshots__ directory exists under test/"
+**Status:** ⚙ — `eslint.config.mjs`, scoped to `test/**/*.{ts,tsx}`: `no-restricted-syntax` forbidding `toMatchSnapshot`/`toMatchInlineSnapshot`. No `__snapshots__` directory exists under `test/`. *(T-22: moved from `☑`/`test/quality/test-sweep.test.ts` meta-test, deleted by T-19; ARCH-07.)*
 ```gherkin
 Given the test suite
 Then no component's only test is a snapshot assertion
 ```
-> *ARCH-07:* `⚙`-eligible after T-19 — `no-restricted-syntax` on snapshot
+> *ARCH-07:* proved since T-19 by `no-restricted-syntax` on snapshot
 > matchers in `test/**`.
 
 #### AC-TEST-4 — Coverage floor on logic
-**Status:** ☑ — `test/quality/test-sweep.test.ts` — "AC-TEST-4: a full run collects coverage, so the floor is enforced rather than reported"; `jest.config.mjs` `coverageThreshold` sets 80% statements on `lib/tasks/`, `lib/api/` and `lib/tasks/validation.ts`, and `npm test` (299 tests, 29 suites) passes it on `main` d3070fa, 2026-09-02
+**Status:** ⚙ — `jest.config.mjs` `coverageThreshold` sets 80% statements on `lib/tasks/`, `lib/api/` and `lib/tasks/validation.ts`, enforced by the `test:ci` script (`jest --coverage`) that CI runs, not merely reported. `npm run test:ci` (277 tests, 28 suites) passes it on `main` 2f58e27, 2026-09-03: `lib/api` 97.97%, `lib/tasks` 93.49% statements. *(T-22: moved from `☑`/`test/quality/test-sweep.test.ts` meta-test, deleted by T-19; ARCH-07.)*
 ```gherkin
 Given coverage is collected
 Then statement coverage of the state, API-client, and validation modules is at least 80 percent
 And the threshold is enforced by the test runner, not merely reported
 ```
-> *ARCH-07:* `⚙`-eligible after T-19 — `jest.config.mjs` `coverageThreshold`,
+> *ARCH-07:* proved since T-19 by `jest.config.mjs` `coverageThreshold`,
 > enforced on the `test:ci` script that CI runs.
 
 ---
@@ -807,13 +809,13 @@ And the threshold is enforced by the test runner, not merely reported
 ## CI and deployment (added — not in the brief)
 
 #### AC-CI-1 — Checks run on every pull request
-**Status:** ☑ — `test/quality/ci.test.ts` — "AC-CI-1: typecheck, lint, tests, production build and bundle test run, in that order" and "AC-CI-1: the CI workflow triggers on pull_request with no branch filter". The check "Typecheck, lint, test, build, bundle" ran and passed on PR #32 before its merge.
+**Status:** ⚙ — `.github/workflows/ci.yml`, job `checks` ("Typecheck, lint, test, build, bundle"), steps in order: Typecheck (`npm run typecheck`), Lint (`npm run lint`), Test (`npm run test:ci -- --ci`), Build (`npm run build`), Bundle test (`npm run test:bundle -- --ci`); triggers on `pull_request` (no branch filter) and `push: branches: [main]`. The check ran and passed on PR #40 (T-19) before its merge. *(T-22: moved from `☑`/`test/quality/ci.test.ts`, deleted by T-19; `AC-CI-2` remains the manual check that this is required; ARCH-07.)*
 ```gherkin
 Given a pull request is opened
 Then typecheck, lint, the test suite, a production build, and the bundle test run in CI
 And a failure blocks the merge
 ```
-> *ARCH-07:* `⚙`-eligible after T-19 — the workflow file itself, with its
+> *ARCH-07:* proved since T-19 — the workflow file itself, with its
 > step order, is the proof; `AC-CI-2` remains the manual check that it is
 > required.
 
