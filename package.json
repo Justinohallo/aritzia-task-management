@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:ci": "jest --coverage",
     "test:bundle": "jest --config jest.bundle.config.mjs"
   },
   "dependencies": {
@@ -36,6 +37,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "eslint-plugin-testing-library": "^7.16.2",
     "jest": "^30.5.1",
     "jest-axe": "^11.0.0",
     "jest-environment-jsdom": "^30.5.1",
