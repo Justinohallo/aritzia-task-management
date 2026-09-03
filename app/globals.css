@@ -88,3 +88,33 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * iOS WebKit renders an empty <input type="date"> with no text at all and
+ * lays its value out with an intrinsic width and height that ignore the
+ * primitive's `h-9 w-full`, so the field overflowed its column at 320px and
+ * showed a blank box until a date was picked (`AC-UI-1`, `AC-UI-2`). Dropping
+ * the native appearance makes the box honour the primitive's classes; the
+ * value pseudo keeps its line height when empty so the box does not collapse.
+ * The placeholder is iOS-only (`-webkit-touch-callout` is a WebKit-on-iOS
+ * property): Chromium and desktop Safari already render a segmented
+ * placeholder of their own, and a second one would double it.
+ */
+@layer base {
+  input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: start;
+    min-height: 1.5rem;
+    line-height: 1.5rem;
+  }
+  @supports (-webkit-touch-callout: none) {
+    input[type="date"][data-empty]::before {
+      content: "Select a date";
+      color: var(--muted-foreground);
+    }
+  }
+}

@@ -45,6 +45,15 @@ beforeEach(() => {
 });
 
 describe("<TaskForm />", () => {
+  it("AC-UI-1: the due date field carries data-empty until a date is entered, for the iOS placeholder", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    expect(dueDate()).toHaveAttribute("data-empty", "");
+    await user.type(dueDate(), "2026-09-10");
+    expect(dueDate()).not.toHaveAttribute("data-empty");
+  });
+
   it("AC-ADD-1: a title and a due date create a pending task with those values", async () => {
     const user = userEvent.setup();
     renderForm();

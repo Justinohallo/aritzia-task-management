@@ -10,7 +10,7 @@ line of the brief to the code that implements it and the test that proves it.
 
 **Commit convention:** `feat(tasks): add optimistic delete [AC-DEL-1, AC-API-9]`
 
-**Status legend:** `☐` not started · `◐` implemented, untested · `☑` met, test named · `◉` verified manually, procedure and date named
+**Status legend:** `☐` not started · `◐` implemented, untested · `☑` met, test named · `◉` verified manually, procedure and date named · `⚙` enforced by tooling, rule or flag named
 
 `◉` exists for exactly seven criteria that no Jest test can prove, and for no
 others: `AC-UI-1..4` (jsdom does not lay out), `AC-A11Y-4` (a keyboard walk
@@ -21,6 +21,16 @@ never marked `◉`, and a test that names an ID and asserts nothing does not
 earn `☑`. *(ARCH-03: rule 5, `AC-TEST-1` and the definition of done all
 required a named test for every criterion while ADR-0006 said four of them
 could not have one.)*
+
+`⚙` exists for exactly eight criteria that describe a property of the
+toolchain rather than a behaviour of the application, and for no others:
+`AC-QUAL-1..2`, `AC-CI-1`, `AC-UI-5..6`, `AC-TEST-2..4`. Each is marked `⚙`
+only with the lint rule, compiler flag, runner option or CI step that makes
+it impossible to violate written next to it, and only once T-19 has moved
+the proof there. Until then the `☑` marks below stand. A test that spawns
+the linter to read the linter's config, or regex-parses the CI file, proves
+nothing the tool does not already enforce and is not a valid `☑` for these
+eight after T-19. *(ARCH-07, `B-27`.)*
 
 ---
 
@@ -618,9 +628,13 @@ And the console reports no hydration mismatch
 **Status:** ☑ — `test/quality/component-boundary.test.ts` — "AC-UI-5: buttons, inputs, checkboxes, selects and dialogs exist as shadcn primitives", "AC-UI-5: no native control is hand-rolled alongside the primitives", "AC-UI-5: the controls the domain renders are imported from components/ui"
 ```gherkin
 Given the interface is implemented
-Then buttons, inputs, checkboxes, selects, and dialogs come from shadcn/ui primitives
-And equivalent controls are not hand-rolled alongside them
+Then every control the interface renders comes from a shadcn/ui primitive
+And no equivalent control is hand-rolled alongside the primitives
 ```
+> *ARCH-07 (`B-26`):* the earlier wording named selects and dialogs, and its
+> test asserted that those files exist. No screen renders either, so the
+> criterion mandated dead code. It now asks what the brief asks. `⚙`-eligible
+> after T-19: a lint rule on JSX element names outside `components/ui/**`.
 
 #### AC-UI-6 — A component boundary exists
 **Status:** ☑ — `test/quality/component-boundary.test.ts` — "AC-UI-6: no primitive imports from the task domain" and "AC-UI-6: generic primitives live in components/ui and task-domain components in components/tasks"
@@ -629,6 +643,8 @@ Given the component tree is inspected
 Then generic, app-agnostic primitives live separately from task-domain components
 And no primitive imports from the task domain
 ```
+> *ARCH-07:* `⚙`-eligible after T-19 — `no-restricted-imports` scoped to
+> `components/ui/**`.
 > This is the seam described in [ADR-0003](adr/0003-component-library.md) —
 > the line along which a `packages/ui` workspace would be extracted if a
 > second consumer ever appeared. Respecting it costs nothing now and makes
@@ -731,6 +747,8 @@ Then TypeScript strict mode is enabled
 And the typecheck script passes with no errors
 And no explicit any appears in application source
 ```
+> *ARCH-07:* `⚙`-eligible after T-19 — `tsconfig.json` `strict`, the
+> `typecheck` script, and `@typescript-eslint/no-explicit-any`.
 
 #### AC-QUAL-2 — Suppressions are justified
 **Status:** ☑ — `test/quality/typescript.test.ts` — "AC-QUAL-2: no @ts-ignore, and every @ts-expect-error carries a reason"
@@ -739,6 +757,8 @@ Given a type suppression exists
 Then it is @ts-expect-error rather than @ts-ignore
 And it carries a comment explaining why
 ```
+> *ARCH-07:* `⚙`-eligible after T-19 — `@typescript-eslint/ban-ts-comment`
+> with `allow-with-description`.
 
 ---
 
@@ -760,6 +780,8 @@ Given a component test
 Then it queries by role, label, or visible text
 And it does not assert on implementation details such as internal state or class names
 ```
+> *ARCH-07:* `⚙`-eligible after T-19 — `eslint-plugin-testing-library` and a
+> `no-restricted-syntax` rule on class-name and instance assertions in `test/**`.
 
 #### AC-TEST-3 — No snapshot-only coverage
 **Status:** ☑ — `test/quality/test-sweep.test.ts` — "AC-TEST-3: no test file uses a snapshot assertion" and "AC-TEST-3: no __snapshots__ directory exists under test/"
@@ -767,6 +789,8 @@ And it does not assert on implementation details such as internal state or class
 Given the test suite
 Then no component's only test is a snapshot assertion
 ```
+> *ARCH-07:* `⚙`-eligible after T-19 — `no-restricted-syntax` on snapshot
+> matchers in `test/**`.
 
 #### AC-TEST-4 — Coverage floor on logic
 **Status:** ☑ — `test/quality/test-sweep.test.ts` — "AC-TEST-4: a full run collects coverage, so the floor is enforced rather than reported"; `jest.config.mjs` `coverageThreshold` sets 80% statements on `lib/tasks/`, `lib/api/` and `lib/tasks/validation.ts`, and `npm test` (299 tests, 29 suites) passes it on `main` d3070fa, 2026-09-02
@@ -775,6 +799,8 @@ Given coverage is collected
 Then statement coverage of the state, API-client, and validation modules is at least 80 percent
 And the threshold is enforced by the test runner, not merely reported
 ```
+> *ARCH-07:* `⚙`-eligible after T-19 — `jest.config.mjs` `coverageThreshold`,
+> enforced on the `test:ci` script that CI runs.
 
 ---
 
@@ -787,6 +813,9 @@ Given a pull request is opened
 Then typecheck, lint, the test suite, a production build, and the bundle test run in CI
 And a failure blocks the merge
 ```
+> *ARCH-07:* `⚙`-eligible after T-19 — the workflow file itself, with its
+> step order, is the proof; `AC-CI-2` remains the manual check that it is
+> required.
 
 #### AC-CI-2 — The check is required
 **Status:** ◉ — Read on 2026-09-02 through the GitHub API: `main` reports `protected: true`, and the head of PR #32 carried the CI check "Typecheck, lint, test, build, bundle" (success) before the merge at 19:48 UTC. `docs/REPO-PROTECTIONS.md` §2 is the procedure that registered it and the `SETUP-01` ledger row records it as done. The ruleset's own required-check list is not readable from this session (no ruleset endpoint in the tools available), so the setting is verified by its effect, not by reading it; the operator can confirm by the push test in `docs/REPO-PROTECTIONS.md` §5.
