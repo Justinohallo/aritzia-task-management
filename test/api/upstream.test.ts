@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import type { ScriptedOutcome, SimulationConfig } from "@/lib/api/config";
+import type { ScriptedOutcome, SimulationConfig } from "@/lib/server/simulation";
 import { createUpstream, type UpstreamOptions } from "@/lib/server/upstream";
 import type { CreateTaskRequest, UpstreamResult } from "@/types/api";
 

@@ -145,7 +145,7 @@ export type UpstreamResult<TBody> = UpstreamSuccess<TBody> | UpstreamFailure;
  * Implemented by `lib/server/upstream.ts` (T-06) and called only from Route
  * Handlers, on the server. It persists nothing: `localStorage` remains the
  * system of record. Latency, the rate-limit window and scripted failures come
- * from `lib/api/config.ts` — never from `Math.random()` (`AC-API-10`).
+ * from `lib/server/simulation.ts` — never from `Math.random()` (`AC-API-10`).
  */
 export interface Upstream {
   /** `201` on success, echoing `request.id` and `request.createdAt`. */
