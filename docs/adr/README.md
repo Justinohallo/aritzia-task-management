@@ -17,7 +17,7 @@ dependency is added, not after.
 |---|---|---|
 | [0001](0001-app-router.md) | Next.js App Router over Pages Router | Accepted |
 | [0002](0002-state-management.md) | Context + reducer over a state library | Accepted |
-| [0003](0003-component-library.md) | shadcn/ui over a packaged component library | Accepted |
+| [0003](0003-component-library.md) | shadcn/ui over a packaged component library | Accepted, amended 2026-09-02 (ARCH-07) |
 | [0004](0004-api-simulation.md) | Route Handler simulation with bounded, jittered retry | Accepted, amended 2026-09-01 (ARCH-03) |
 | [0005](0005-auth-and-secret-boundary.md) | sessionStorage auth per brief; server-only secret boundary | Accepted |
-| [0006](0006-test-strategy.md) | Jest + RTL + MSW, behaviour-first | Accepted |
+| [0006](0006-test-strategy.md) | Jest + RTL + MSW, behaviour-first | Accepted, amended 2026-09-02 (ARCH-07) |
