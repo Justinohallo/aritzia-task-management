@@ -16,14 +16,12 @@ export type TaskId = string;
  * - `confirmed` — the server has acknowledged this record, or it was hydrated
  *   from `localStorage`, which is the system of record.
  * - `syncing`   — an optimistic add or delete is in flight (`AC-API-11`).
- * - `failed`    — the last request for this record failed and has not been
- *   rolled back yet.
  *
  * Deliberately not `'pending'`: that word belongs to {@link Filter} and to
  * "status is Pending" in `AC-ADD-1`, which mean *not completed* (ARCH-03).
  * This state is never persisted — see `lib/tasks/schema.ts`.
  */
-export type SyncState = "confirmed" | "syncing" | "failed";
+export type SyncState = "confirmed" | "syncing";
 
 /** The list filter (`AC-FILT-1..4`). Held in the URL query string by T-05. */
 export type Filter = "all" | "pending" | "completed";

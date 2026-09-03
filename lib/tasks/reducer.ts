@@ -21,12 +21,10 @@
  *     in `lib/tasks/mutations.ts` keeps the prior record; the reducer does not.
  *   - `remove/rollback` re-inserts that record as `confirmed`. Order is
  *     derived at render, so its position comes back with it (`AC-API-9`).
- *   - `sync/set` changes the sync state and nothing else.
  *
  * Persistence is not the reducer's job. The provider writes to storage after
  * the actions in {@link PERSISTING_ACTIONS}; `hydrate` is deliberately not one
- * of them (`AC-STATE-4`, ADR-0002 "alternatives considered"). `sync/set` is
- * not one either: the persisted envelope carries no sync state.
+ * of them (`AC-STATE-4`, ADR-0002 "alternatives considered").
  */
 import type { TaskAction, TaskActionType } from "@/lib/tasks/actions";
 import type { Task } from "@/types/task";
@@ -42,9 +40,7 @@ export const initialTasksState: TasksState = [];
  * (ADR-0004), and a reload mid-flight should show what the user just did.
  */
 export const PERSISTING_ACTIONS: ReadonlySet<TaskActionType> = new Set<TaskActionType>([
-  "add",
   "setCompleted",
-  "remove",
   "add/optimistic",
   "add/confirm",
   "add/rollback",
@@ -65,17 +61,9 @@ export function tasksReducer(state: TasksState, action: TaskAction): TasksState 
     case "hydrate":
       return action.tasks;
 
-    case "add":
-      return [...state, action.task];
-
     case "setCompleted": {
       if (!has(state, action.id)) return state;
       return state.map((t) => (t.id === action.id ? { ...t, completed: action.completed } : t));
-    }
-
-    case "remove": {
-      if (!has(state, action.id)) return state;
-      return state.filter((t) => t.id !== action.id);
     }
 
     // -----------------------------------------------------------------------
@@ -112,11 +100,6 @@ export function tasksReducer(state: TasksState, action: TaskAction): TasksState 
       // Already back (a retry that raced the rollback): nothing to restore.
       if (has(state, action.task.id)) return state;
       return [...state, { ...action.task, sync: "confirmed" }];
-    }
-
-    case "sync/set": {
-      if (!has(state, action.id)) return state;
-      return state.map((t) => (t.id === action.id ? { ...t, sync: action.sync } : t));
     }
 
     default: {

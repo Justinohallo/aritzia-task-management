@@ -11,7 +11,7 @@
  * `client` (ADR-0004, T-07) and the one `announce` (`components/ui/live-region.tsx`).
  *
  *   createTask:  add/optimistic ─▶ POST ─┬─ 201 ─▶ add/confirm      (`AC-API-8`)
- *                                        └─ fail ─▶ sync/set failed, add/rollback
+ *                                        └─ fail ─▶ add/rollback     (`AC-API-7`)
  *   deleteTask:  remove/optimistic ─▶ DELETE ─┬─ 200 ─▶ (nothing to reconcile)
  *                                             └─ fail ─▶ remove/rollback (`AC-API-9`)
  *
@@ -115,7 +115,6 @@ export async function createTask({ dispatch, client, announce }: MutationDeps, t
     return { ok: true };
   } catch (error) {
     const failure = describeFailure("add", task, error);
-    dispatch({ type: "sync/set", id: task.id, sync: "failed" });
     dispatch({ type: "add/rollback", id: task.id });
     announce(failure.message, { assertive: true });
     return { ok: false, failure };

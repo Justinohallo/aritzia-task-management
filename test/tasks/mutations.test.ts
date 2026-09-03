@@ -76,9 +76,8 @@ describe("createTask — apply → call → reconcile / rollback", () => {
 
     const result = await createTask(h.deps, task);
 
-    expect(h.types()).toEqual(["add/optimistic", "sync/set", "add/rollback"]);
-    expect(h.actions[1]).toEqual({ type: "sync/set", id: task.id, sync: "failed" });
-    expect(h.actions[2]).toEqual({ type: "add/rollback", id: task.id });
+    expect(h.types()).toEqual(["add/optimistic", "add/rollback"]);
+    expect(h.actions[1]).toEqual({ type: "add/rollback", id: task.id });
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("unreachable");
     expect(result.failure.kind).toBe("rate_limited");
@@ -91,7 +90,7 @@ describe("createTask — apply → call → reconcile / rollback", () => {
 
     const result = await createTask(h.deps, task);
 
-    expect(h.types()).toEqual(["add/optimistic", "sync/set", "add/rollback"]);
+    expect(h.types()).toEqual(["add/optimistic", "add/rollback"]);
     if (result.ok) throw new Error("unreachable");
     expect(result.failure.kind).toBe("generic");
     expect(result.failure.message).not.toMatch(/rate limit/i);

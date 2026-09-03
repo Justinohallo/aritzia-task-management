@@ -78,7 +78,7 @@ describe("TasksProvider", () => {
   it("AC-STATE-1: components read state and dispatch through the typed hooks", () => {
     const { result } = renderApi(memoryStorage());
     expect(result.current.tasks).toEqual([]);
-    act(() => result.current.dispatch({ type: "add", task: makeTask() }));
+    act(() => result.current.dispatch({ type: "add/optimistic", task: makeTask() }));
     expect(result.current.tasks.map((t) => t.title)).toEqual(["Write the reducer tests"]);
   });
 
@@ -96,7 +96,7 @@ describe("TasksProvider", () => {
   it("AC-STATE-1: dispatch is referentially stable across state changes", () => {
     const { result } = renderApi(memoryStorage());
     const first = result.current.dispatch;
-    act(() => first({ type: "add", task: makeTask() }));
+    act(() => first({ type: "add/optimistic", task: makeTask() }));
     expect(result.current.dispatch).toBe(first);
   });
 
@@ -127,13 +127,13 @@ describe("TasksProvider", () => {
     const task = makeTask();
     const stored = () => JSON.parse(storage.getItem(STORAGE_KEY) as string).tasks;
 
-    act(() => result.current.dispatch({ type: "add", task }));
+    act(() => result.current.dispatch({ type: "add/optimistic", task }));
     expect(stored()).toEqual([expect.objectContaining({ id: task.id, completed: false })]);
 
     act(() => result.current.dispatch({ type: "setCompleted", id: task.id, completed: true }));
     expect(stored()).toEqual([expect.objectContaining({ id: task.id, completed: true })]);
 
-    act(() => result.current.dispatch({ type: "remove", id: task.id }));
+    act(() => result.current.dispatch({ type: "remove/optimistic", id: task.id }));
     expect(stored()).toEqual([]);
     expect(setItem).toHaveBeenCalledTimes(3);
   });
@@ -219,8 +219,8 @@ describe("TasksProvider", () => {
     // Session one: authenticated, create tasks.
     window.sessionStorage.setItem("auth", "session-one");
     const first = renderApi(undefined as unknown as Storage);
-    act(() => first.result.current.dispatch({ type: "add", task: makeTask() }));
-    act(() => first.result.current.dispatch({ type: "add", task: makeOtherTask() }));
+    act(() => first.result.current.dispatch({ type: "add/optimistic", task: makeTask() }));
+    act(() => first.result.current.dispatch({ type: "add/optimistic", task: makeOtherTask() }));
     first.unmount();
 
     // Logout: the session-scoped store is cleared; the semi-persistent one is not.

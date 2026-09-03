@@ -12,7 +12,7 @@
  * restoring a record restores its position with no index to get wrong.
  */
 import type { ApiTask } from "@/types/api";
-import type { SyncState, Task, TaskId } from "@/types/task";
+import type { Task, TaskId } from "@/types/task";
 
 export type TaskAction =
   // -------------------------------------------------------------------------
@@ -25,15 +25,8 @@ export type TaskAction =
    */
   | { type: "hydrate"; tasks: Task[] }
 
-  // -------------------------------------------------------------------------
-  // T-04 / T-05 — local mutations, before the API is wired (wave 2)
-  // -------------------------------------------------------------------------
-  /** Append a task. In wave 2 the task arrives `confirmed`. */
-  | { type: "add"; task: Task }
   /** Mark complete or incomplete (`AC-DONE-1`, `AC-DONE-2`). Not an API call. */
   | { type: "setCompleted"; id: TaskId; completed: boolean }
-  /** Remove a task outright. In wave 2 there is no server to reconcile with. */
-  | { type: "remove"; id: TaskId }
 
   // -------------------------------------------------------------------------
   // T-08 — optimistic lifecycle (ADR-0004; AC-API-8, AC-API-9, AC-API-11)
@@ -62,12 +55,6 @@ export type TaskAction =
    * Final failure: restore the prior record with `sync: 'confirmed'`. Its
    * position follows from `AC-LIST-3`; nothing else is needed (`AC-API-9`).
    */
-  | { type: "remove/rollback"; task: Task }
-  /**
-   * Set a task's sync state without touching anything else — for marking a
-   * record `failed` before it is rolled back, or `confirmed` after a delete
-   * that was rolled back and then retried. No-op if the id is absent.
-   */
-  | { type: "sync/set"; id: TaskId; sync: SyncState };
+  | { type: "remove/rollback"; task: Task };
 
 export type TaskActionType = TaskAction["type"];
