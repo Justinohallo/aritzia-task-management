@@ -1,6 +1,6 @@
 # ADR-0006 — Jest + RTL + MSW, behaviour-first
 
-**Status:** Accepted, amended 2026-09-02 (ARCH-06) · **Date:** 2026-09-01 · **Criteria:** `AC-TEST-1..4`, `AC-A11Y-6`, and every criterion's proof
+**Status:** Accepted, amended 2026-09-02 (ARCH-07) · **Date:** 2026-09-01 · **Criteria:** `AC-TEST-1..4`, `AC-A11Y-6`, and every criterion's proof
 
 ## Context
 
@@ -95,7 +95,7 @@ be meaningfully asserted here and is verified by manual inspection at 320, 768,
 and 1024 pixels. Claiming responsive coverage from jsdom would be a false
 assurance, which is worse than an acknowledged manual check.
 
-## Amendment — ARCH-06, 2026-09-02
+## Amendment — ARCH-07, 2026-09-02
 
 The delivered suite had 299 tests, 33 of which asserted on configuration
 files and the source tree: a Jest test spawning ESLint to confirm the ESLint
@@ -106,7 +106,7 @@ is a lint rule that would give the same guarantee faster and in the editor.
 
 **Decision.** A criterion about the toolchain is proved by the tool. The
 `⚙` mark (`ACCEPTANCE.md` legend) names the rule; the Jest meta-tests are
-deleted (T-18). Behaviour tests are untouched, and `AC-TEST-1`'s
+deleted (T-19). Behaviour tests are untouched, and `AC-TEST-1`'s
 cross-check between `ACCEPTANCE.md` and the suite stays, because a document
 and a test tree drifting apart is a behaviour of the repository.
 

@@ -26,11 +26,11 @@ could not have one.)*
 toolchain rather than a behaviour of the application, and for no others:
 `AC-QUAL-1..2`, `AC-CI-1`, `AC-UI-5..6`, `AC-TEST-2..4`. Each is marked `⚙`
 only with the lint rule, compiler flag, runner option or CI step that makes
-it impossible to violate written next to it, and only once T-18 has moved
+it impossible to violate written next to it, and only once T-19 has moved
 the proof there. Until then the `☑` marks below stand. A test that spawns
 the linter to read the linter's config, or regex-parses the CI file, proves
 nothing the tool does not already enforce and is not a valid `☑` for these
-eight after T-18. *(ARCH-06, `B-26`.)*
+eight after T-19. *(ARCH-07, `B-27`.)*
 
 ---
 
@@ -631,10 +631,10 @@ Given the interface is implemented
 Then every control the interface renders comes from a shadcn/ui primitive
 And no equivalent control is hand-rolled alongside the primitives
 ```
-> *ARCH-06 (`B-25`):* the earlier wording named selects and dialogs, and its
+> *ARCH-07 (`B-26`):* the earlier wording named selects and dialogs, and its
 > test asserted that those files exist. No screen renders either, so the
 > criterion mandated dead code. It now asks what the brief asks. `⚙`-eligible
-> after T-18: a lint rule on JSX element names outside `components/ui/**`.
+> after T-19: a lint rule on JSX element names outside `components/ui/**`.
 
 #### AC-UI-6 — A component boundary exists
 **Status:** ☑ — `test/quality/component-boundary.test.ts` — "AC-UI-6: no primitive imports from the task domain" and "AC-UI-6: generic primitives live in components/ui and task-domain components in components/tasks"
@@ -643,7 +643,7 @@ Given the component tree is inspected
 Then generic, app-agnostic primitives live separately from task-domain components
 And no primitive imports from the task domain
 ```
-> *ARCH-06:* `⚙`-eligible after T-18 — `no-restricted-imports` scoped to
+> *ARCH-07:* `⚙`-eligible after T-19 — `no-restricted-imports` scoped to
 > `components/ui/**`.
 > This is the seam described in [ADR-0003](adr/0003-component-library.md) —
 > the line along which a `packages/ui` workspace would be extracted if a
@@ -747,7 +747,7 @@ Then TypeScript strict mode is enabled
 And the typecheck script passes with no errors
 And no explicit any appears in application source
 ```
-> *ARCH-06:* `⚙`-eligible after T-18 — `tsconfig.json` `strict`, the
+> *ARCH-07:* `⚙`-eligible after T-19 — `tsconfig.json` `strict`, the
 > `typecheck` script, and `@typescript-eslint/no-explicit-any`.
 
 #### AC-QUAL-2 — Suppressions are justified
@@ -757,7 +757,7 @@ Given a type suppression exists
 Then it is @ts-expect-error rather than @ts-ignore
 And it carries a comment explaining why
 ```
-> *ARCH-06:* `⚙`-eligible after T-18 — `@typescript-eslint/ban-ts-comment`
+> *ARCH-07:* `⚙`-eligible after T-19 — `@typescript-eslint/ban-ts-comment`
 > with `allow-with-description`.
 
 ---
@@ -780,7 +780,7 @@ Given a component test
 Then it queries by role, label, or visible text
 And it does not assert on implementation details such as internal state or class names
 ```
-> *ARCH-06:* `⚙`-eligible after T-18 — `eslint-plugin-testing-library` and a
+> *ARCH-07:* `⚙`-eligible after T-19 — `eslint-plugin-testing-library` and a
 > `no-restricted-syntax` rule on class-name and instance assertions in `test/**`.
 
 #### AC-TEST-3 — No snapshot-only coverage
@@ -789,7 +789,7 @@ And it does not assert on implementation details such as internal state or class
 Given the test suite
 Then no component's only test is a snapshot assertion
 ```
-> *ARCH-06:* `⚙`-eligible after T-18 — `no-restricted-syntax` on snapshot
+> *ARCH-07:* `⚙`-eligible after T-19 — `no-restricted-syntax` on snapshot
 > matchers in `test/**`.
 
 #### AC-TEST-4 — Coverage floor on logic
@@ -799,7 +799,7 @@ Given coverage is collected
 Then statement coverage of the state, API-client, and validation modules is at least 80 percent
 And the threshold is enforced by the test runner, not merely reported
 ```
-> *ARCH-06:* `⚙`-eligible after T-18 — `jest.config.mjs` `coverageThreshold`,
+> *ARCH-07:* `⚙`-eligible after T-19 — `jest.config.mjs` `coverageThreshold`,
 > enforced on the `test:ci` script that CI runs.
 
 ---
@@ -813,7 +813,7 @@ Given a pull request is opened
 Then typecheck, lint, the test suite, a production build, and the bundle test run in CI
 And a failure blocks the merge
 ```
-> *ARCH-06:* `⚙`-eligible after T-18 — the workflow file itself, with its
+> *ARCH-07:* `⚙`-eligible after T-19 — the workflow file itself, with its
 > step order, is the proof; `AC-CI-2` remains the manual check that it is
 > required.
 

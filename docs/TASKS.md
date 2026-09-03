@@ -4,12 +4,16 @@
 > progress.
 >
 > **Appetite:** P1 complete by 2026-09-02 17:00 PT (confirmed).
-> **Estimated:** 23h35m of work across 22 tasks — 22h00m of build once the
+> **Estimated:** 23h35m of work across 23 tasks — 22h00m of build once the
 > three tooling tasks are excluded. The Sequence table is the source; these
-> totals are its sum. **14h30m of wall clock** when run as nine waves of
-> concurrent agents. T-00 and T-16 add tooling work and no wall clock: they
-> run inside wave 0, alongside the longer T-01. T-17 is charged to wave 1
-> but runs after it; see its detail for why.
+> totals are its sum. **14h30m of wall clock** when run as six waves of
+> concurrent agents, plus a seventh that carries four bounded optimisation
+> tasks (ARCH-07) and the open-ended maintenance task. T-00 and T-16 add tooling
+> work and no wall clock: they run inside wave 0, alongside the longer T-01.
+> T-17 is charged to wave 1 but runs after it; see its detail for why. T-18
+> is the maintenance phase and carries `0m` in both tables: it has no fixed
+> duration, and its cost is measured per fix in the ledger rather than
+> estimated here.
 > See [Running in parallel](#running-in-parallel).
 >
 > **Amended 2026-09-01 (ARCH-03).** A fresh-session critic pass over the
@@ -26,16 +30,24 @@
 > are the [ARCH-04](#arch-04--workflow-amendments-from-the-wave-1-review)
 > entry below; the tooling they need is **T-17**.
 >
-> **Amended 2026-09-02 (ARCH-06).** The build is complete and verified
-> (T-13). A principal-engineer review of the delivered code found nothing to
-> cut from the shipped bundle and four things to cut from the repository:
-> tests that assert on configuration files instead of behaviour, a criterion
-> that mandates unused source files, dead reducer states, and process
-> archaeology in source comments. The findings are the
-> [ARCH-06](#arch-06--optimisation-phase-from-the-post-qa-review) entry; the
-> work is **T-18..T-21**, waves 6 and 7, with the freeze (T-15) moved to
-> wave 8 so that it still comes last. `B-25` and `B-26` in
-> [`BLOCKERS.md`](BLOCKERS.md) record the two spec defects.
+> **Amended 2026-09-02 (ARCH-06).** The build is done — T-13 marked
+> `ACCEPTANCE.md`, T-14 shipped the deck, the app is deployed — and the first
+> post-QA bug (`B-25`, from the operator's phone walk) had no lane: every
+> task with an ownership row is closed, and the Builder fixing it failed
+> `task-close` check 6. The plan now has a **wave 7, maintenance**, and one
+> standing task, **T-18**, that owns everything but the frozen
+> `components/ui/**`. One session per fix, each its own ledger row, so the
+> ledger gains a per-fix maintenance cost the deck can cite.
+>
+> **Amended 2026-09-02 (ARCH-07).** A principal-engineer review of the
+> delivered code found nothing to cut from the shipped bundle and four
+> things to cut from the repository: tests that assert on configuration
+> files instead of behaviour, a criterion that mandates unused source files,
+> dead reducer states, and process archaeology in source comments. The
+> findings are the [ARCH-07](#arch-07--optimisation-phase-from-the-post-qa-review)
+> entry; the work is **T-19..T-22**, four bounded tasks in wave 7 that merge
+> before the T-15 freeze. `B-26` and `B-27` in [`BLOCKERS.md`](BLOCKERS.md)
+> record the two spec defects.
 
 ## How to run a task
 
@@ -90,12 +102,12 @@ wrong, the wave is wrong too.
 | **T-12** | Promote and verify the deployment | `AC-DEP-1` | 30m | **5** | T-11 |
 | **T-13** | QA pass | all — verification only | 45m | **5** | T-12 |
 | **T-14** | Presentation | — | 120m | **5** | wave gate only — the specs, *not* the code |
-| | 🏁 **Milestone: submitted** (end of wave 5; ARCH-06 opens the optimisation phase) | | | | |
-| **T-18** | Tooling marks: lint boundaries replace the meta-tests | `AC-QUAL-1..2` (⚙ mark), `AC-CI-1` (⚙ mark), `AC-UI-5..6` (⚙ mark), `AC-TEST-2..4` (⚙ mark) | 75m | **6** | T-13 |
-| **T-19** | Dead code and single sources of truth | — (refactor; commits cite the criteria they preserve) | 90m | **6** | T-18 |
-| **T-20** | Comment diet and React out of `lib/` | — (refactor; commits cite the criteria they preserve) | 75m | **6** | T-19 |
-| **T-21** | QA re-verification after the optimisation | all — verification only | 45m | **7** | T-20 |
-| **T-15** | Freeze and dry run | — | 45m | **8** | T-21, T-14 |
+| **T-15** | Freeze and dry run | — | 45m | **6** | T-13, T-14 |
+| **T-18** | Maintenance — one session per bug or cleanup, standing | the criteria each fix violates | 0m | **7** | T-13, T-14 — not T-15; see the detail |
+| **T-19** | Tooling marks: lint boundaries replace the meta-tests | `AC-QUAL-1..2` (⚙ mark), `AC-CI-1` (⚙ mark), `AC-UI-5..6` (⚙ mark), `AC-TEST-2..4` (⚙ mark) | 75m | **7** | T-13, T-14 — not T-15 (*ARCH-07*) |
+| **T-20** | Dead code and single sources of truth | — (refactor; commits cite the criteria they preserve) | 90m | **7** | T-19 |
+| **T-21** | Comment diet and React out of `lib/` | — (refactor; commits cite the criteria they preserve) | 75m | **7** | T-20 |
+| **T-22** | QA re-verification after the optimisation | all — verification only | 45m | **7** | T-21 |
 
 Two dependencies in the original plan turned out not to exist, and both are
 worth naming because they are where the parallelism comes from:
@@ -133,9 +145,13 @@ and CI time at each boundary is counted.
 | **3** | 1 | T-08 | 90m | merged, `main` green 🏁 *brief met* |
 | **4** | 2 | T-09 ‖ T-10 | 60m | T-09 and T-10 merged |
 | **5** | 2 | T-11 → T-12 → T-13 ‖ T-14 | 135m | QA pass recorded, T-14 drafted |
-| **6** | 1 | T-18 → T-19 → T-20 | 240m | all three merged, `main` green, `npm test` under 12s |
-| **7** | 1 | T-21 | 45m | QA re-marks recorded; open `B-` rows resolved |
-| **8** | 1 | T-15 | 45m | — |
+| **6** | 1 | T-15 | 45m | — |
+| **7** | 1 | T-19 → T-20 → T-21 → T-22, then T-18 one session per fix, strictly serial | 4h45m | open-ended — no wave follows; gated on T-13 and T-14 closed, not on T-15 (*ARCH-06*). The 4h45m is the four bounded ARCH-07 tasks; T-18 stays uncosted |
+
+Wave 7 is serial by definition: one maintenance session at a time, so the
+one-writer-per-path constraint that `task-close` check 6 enforces has nothing
+to protect, and T-18's lane is the whole tree. Its `0m` is not an estimate;
+the phase has no fixed duration and each fix is costed by its own ledger row.
 
 **Parallelism buys wall clock, not money.** Total token spend goes up slightly:
 each concurrent agent reads the same spec independently, and every wave
@@ -169,10 +185,11 @@ found a spec gap and writes a blocker.**
 | **T-11** | `**/*.test.*`, `jest.config` thresholds | — |
 | **T-12** | for one commit, and nothing else in it: `app/login/login-form.tsx` and `lib/auth/session-bar.tsx` (the `B-22` touch-target classes) | everything |
 | **T-14** | `docs/presentation/**` | all specs, `LEDGER.md` |
-| **T-18** | `eslint.config.mjs`, `jest.config.mjs`, `package.json` (devDependencies only), `test/quality/**`, `test/msw/handlers.test.ts`, `scripts/task-close` rule-5 grep if it must learn the `⚙` mark | everything else |
-| **T-19** | `lib/**`, `types/**`, `app/**`, `components/tasks/**`, `components/ui/**` (deletions only), `app/globals.css`, `package.json` (removals only), `test/**` | `docs/**` |
-| **T-20** | `lib/**`, `components/**`, `app/**`, `test/**` (moves and comment edits; no behaviour change) | `docs/**` |
-| **T-21** | `docs/ACCEPTANCE.md` status marks, `docs/BLOCKERS.md` | everything |
+| **T-18** | everything — except `components/ui/**`, which stays frozen as T-01 left it (*ARCH-06*; wave 7 runs one session at a time, so there is no second writer to collide with) | — |
+| **T-19** | `eslint.config.mjs`, `jest.config.mjs`, `package.json` (devDependencies only), `.github/workflows/ci.yml` (the `test:ci` script), `test/quality/**`, `test/msw/handlers.test.ts`, `.claude/skills/task-close/**` if the rule-5 grep must learn the `⚙` mark | everything else |
+| **T-20** | `lib/**`, `types/**`, `app/**`, `components/tasks/**`, `components/ui/**` (deletions only — *ARCH-07*, the one exception to the T-01 freeze), `app/globals.css`, `package.json` (removals only), `test/**` | `docs/**` |
+| **T-21** | `lib/**`, `components/**`, `app/**`, `test/**` (moves and comment edits; no behaviour change) | `docs/**` |
+| **T-22** | `docs/ACCEPTANCE.md` status marks, `docs/BLOCKERS.md` | everything |
 
 Three paths are contended and are handled by rule, not by hope:
 
@@ -216,10 +233,16 @@ task after wave 0 creates a live region of its own. *(ARCH-03)*
    [AC-LIST-1..4, AC-FILT-1..6, AC-DONE-1..3, AC-DEL-1, AC-DEL-3..4]`. Branch
    commits carry IDs for the close check; the title carries them for the
    history a reviewer actually reads. *(ARCH-03)*
+   *ARCH-06:* a cleanup that satisfies no criterion — a `refactor:` commit —
+   references the criteria whose tests cover the code it touches, not a
+   criterion it meets: `refactor(tasks): T-18 extract the date parser
+   [AC-ADD-3, AC-ADD-4]` says which tests prove the change is behaviour-
+   preserving. The PR title carries `T-18` and the same IDs, as before.
+   `CLAUDE.md` rule 3 and `CONTRIBUTING.md` state the same.
 2. **Do not start a wave until the previous wave is merged and `main` is
    green.** The waves are the synchronisation points; there are only six of
-   them, and skipping one is how two agents end up building against different
-   versions of the same contract. Inside a wave the `Depends on` cell still
+   them before maintenance, and skipping one is how two agents end up
+   building against different versions of the same contract. Inside a wave the `Depends on` cell still
    holds — wave 5 is a chain, and T-12 does not start until T-11 is closed.
 3. **Merge order within a wave is ascending task number.** Later pull requests
    rebase onto `main` and re-run CI before merging. Do not merge two pull
@@ -372,13 +395,61 @@ with nobody assigned to them. What it resolves, in order:
 §5 and §6 are amended, `LEDGER.md` states the interventions decision, and
 `spec-lint.py` passes. No application code.
 
-### ARCH-06 · Optimisation phase from the post-QA review
+### T-17 · Merge-boundary guards and blocker visibility
+tooling · 20m · **wave 1** — runs alone, after T-02/T-03/T-06 are merged and before wave 2 opens · *added by ARCH-04; estimate set at 20m when ARCH-04 chose the interventions honesty note over a derivation script*
+
+Every rule that wave 1 broke was enforced only inside the session, by a
+close turn the operator can skip by pressing **Merge** first. This task moves
+three of them to the merge boundary, where the button stays grey until they
+hold, and makes open blockers visible where a Builder will read them. Same
+lane and same constraints as T-16: stdlib or workflow YAML, no runtime
+dependency, no application code.
+
+- **PR-title job in `repo-guard.yml`.** Fails a pull request whose title does
+  not match `<type>(<scope>): <TASK-ID> … [<criteria>]` for a Builder
+  branch, and — for any commit on the branch that carries `[AC-…]` — whose
+  bracketed set is not the union of the branch's commit criteria. `chore:`
+  and `docs:` titles are exempt, as in `CLAUDE.md` rule 3.
+- **Ledger-row job in `repo-guard.yml`.** Fails a Builder pull request whose
+  diff does not add a `docs/LEDGER.md` row with the task ID in the title.
+  This is what makes `/task-close` unskippable: without it, T-01, T-16, T-06
+  and T-02 all merged before their rows existed, and T-02 still has none.
+- **`spec-lint` job in `repo-guard.yml`** on any pull request touching
+  `docs/**` or `scripts/spec-lint.py` — the `B-18` drop-in, stdlib only.
+- **`task-start` prints open blockers.** Every `BLOCKERS.md` row whose
+  Resolution is `open`, with the ones naming this task or a path in its
+  ownership row first. It warns; it does not refuse — refusing would hold
+  every wave on the Architect's calendar.
+- **`task-close` check 5 accepts an ADR-covered dependency** (`B-19`): a
+  new entry in `dependencies` passes if its package name appears in any file
+  under `docs/adr/`.
+- **The `B-20` follow-up commit** (assigned here by ARCH-04): mount
+  `<TasksProvider>` inside `RequireAuth` in `app/(protected)/layout.tsx`,
+  one commit, `[AC-STATE-1]`, nothing else in it. The file is in this task's
+  ownership row for that commit only.
+- **The `B-21` rename commit** (assigned here by ARCH-04): the describe block
+  in `test/api/handlers.test.ts` that cites `B-21` names `AC-API-13`
+  instead, one commit, `[AC-API-13]`, no assertion changed. The file is in
+  this task's ownership row for that commit only.
+- *No interventions script.* ARCH-04 chose the honesty note
+  (`LEDGER.md`, "What `interventions` counts"), so the `--interventions
+  from-pr` derivation is not built and the estimate is 20m, not 30m.
+
+**Done when:** a pull request with a mistitled subject, or with no ledger
+row, is red on Repo Guard; `task-start --dry-run all` still passes;
+`spec-lint.py` runs green in CI on this branch; and `/task-close` on this
+session passes check 5 with `package.json` unchanged.
+
+**Time box:** 45m. Past that, ship the two `repo-guard.yml` jobs and the
+`task-start` warning, and leave the rest as a `B-` row.
+
+### ARCH-07 · Optimisation phase from the post-QA review
 Architect · not a task row · *added 2026-09-02* · **status: open** —
-spec amendments landed in `docs: ARCH-06 optimisation phase, resolve B-25..B-26`;
-closes when T-21 has re-marked `ACCEPTANCE.md`.
+spec amendments landed in `docs: ARCH-07 optimisation phase, resolve B-26..B-27`;
+closes when T-22 has re-marked `ACCEPTANCE.md`.
 
 The build is done and verified. This entry is what a principal engineer would
-change in it, measured rather than felt, and it opens waves 6–8. The numbers
+change in it, measured rather than felt, and it adds four bounded tasks to wave 7. The numbers
 below were taken against `main` a74ab31 on 2026-09-02.
 
 **What was measured.**
@@ -401,13 +472,13 @@ pure-logic half (reducer, validation, retry, storage, session, upstream,
 handlers — about 110 tests) is the best thing in the repository; the count is
 not the problem. Two real defects sit in the spec, and the rest is hygiene:
 
-1. **`B-25` — `AC-UI-5` mandates dead code.** Its test asserts that `select`
+1. **`B-26` — `AC-UI-5` mandates dead code.** Its test asserts that `select`
    and `dialog` exist on disk. No screen uses either. A Builder cannot delete
    them without failing a criterion, and QA would mark the deletion a
    regression. *Resolved:* the criterion is reworded to what the brief
    actually asks — every control the interface renders comes from a shadcn
    primitive, and none is hand-rolled — with no list of files.
-2. **`B-26` — rule 5 manufactures tests for tooling properties.** "A criterion
+2. **`B-27` — rule 5 manufactures tests for tooling properties.** "A criterion
    is not met until a test names it" is right for behaviour and wrong for
    strict mode, import boundaries, CI step order and coverage thresholds.
    The rule forced T-01, T-10 and T-11 to write Jest tests that spawn ESLint
@@ -450,16 +521,21 @@ brief names Jest; [ADR-0006](adr/0006-test-strategy.md) records the cost),
 move `lib/server/**` (the `AC-API-3` boundary tests name that path and the
 secret boundary is not worth re-proving for a rename).
 
-**Sequencing.** One chain, ascending: T-18 first, because it changes what
-proves the criteria T-19 and T-20 will touch; T-19 before T-20, because
-deletions before moves keep every diff readable. T-21 is a fresh QA session
-on the T-13 pattern and re-marks every criterion whose named test moved or
-whose proof became a `⚙`. T-15 follows, so the freeze is still the last
-thing that happens. The wave gate applies as before: T-18 opens only once
-T-15's *old* wave-6 slot is vacated, which this amendment does by moving it.
+**Sequencing.** One chain, ascending, inside wave 7 (which ARCH-06 made
+serial, so the one-writer rule has nothing to protect): T-19 first, because
+it changes what proves the criteria T-20 and T-21 will touch; T-20 before
+T-21, because deletions before moves keep every diff readable. T-22 is a
+fresh QA session on the T-13 pattern and re-marks every criterion whose
+named test moved or whose proof became a `⚙`. All four merge before T-15
+opens, on the same rule ARCH-06 set for T-18 fixes: nothing merges after the
+freeze begins. They are claimed with `scripts/task.sh <ID> <criteria>`, as
+T-18 is, because `/task-start`'s gate holds wave 7 until T-15 closes.
+Unlike T-18 they have ownership rows: T-20 deletes under `components/ui/**`,
+which T-18's lane freezes, and a bounded refactor should say what it may
+touch.
 
-**Done when:** T-21 has re-marked `ACCEPTANCE.md` with no `◐`, `B-25` and
-`B-26` carry a Commit, `npm test` runs in under 12 seconds locally, and the
+**Done when:** T-22 has re-marked `ACCEPTANCE.md` with no `◐`, `B-26` and
+`B-27` carry a Commit, `npm test` runs in under 12 seconds locally, and the
 application's behaviour is unchanged — every `☑` still names a passing test.
 
 ### T-17 · Merge-boundary guards and blocker visibility
@@ -801,8 +877,8 @@ Structure the argument, do not narrate the build:
    says about specification quality.
 6. **What I would do next**, from the P2 list and the NOT list.
 
-### T-18 · Tooling marks: lint boundaries replace the meta-tests
-`AC-QUAL-1..2`, `AC-CI-1`, `AC-UI-5..6`, `AC-TEST-2..4` (⚙ mark) · 75m · **wave 6, solo** — after T-13; opens the chain
+### T-19 · Tooling marks: lint boundaries replace the meta-tests
+`AC-QUAL-1..2`, `AC-CI-1`, `AC-UI-5..6`, `AC-TEST-2..4` (⚙ mark) · 75m · **wave 7, serial** — after T-13 and T-14; claimed with `scripts/task.sh`, not `/task-start` (see ARCH-07)
 
 Move every source-tree and config assertion out of Jest and into the tool
 that actually enforces it, so the guarantee is the same and the feedback
@@ -813,7 +889,7 @@ arrives in the editor. Behaviour tests are untouched.
   `@/lib/*` except `@/lib/utils`, `@/types`, and any `../` path.
 - `AC-UI-5`: `no-restricted-syntax` on JSX elements named `button`, `input`,
   `select`, `textarea`, `dialog` outside `components/ui/**`. No file list —
-  the criterion no longer names one (*ARCH-06*, `B-25`).
+  the criterion no longer names one (*ARCH-07*, `B-26`).
 - `AC-QUAL-1..2`: already `strict: true`, `no-explicit-any` and
   `ban-ts-comment` with a description; the `⚙` mark names them. The test that
   spawned ESLint to read its own config is deleted.
@@ -821,7 +897,7 @@ arrives in the editor. Behaviour tests are untouched.
   deleted.
 - `AC-TEST-2`: `eslint-plugin-testing-library` (recommended React config —
   a dev dependency serving [ADR-0006](adr/0006-test-strategy.md), amended
-  *ARCH-06*) plus `no-restricted-syntax` on `toHaveClass`, `.className` and
+  *ARCH-07*) plus `no-restricted-syntax` on `toHaveClass`, `.className` and
   `.instance()` in `test/**`.
 - `AC-TEST-3`: `no-restricted-syntax` on `toMatchSnapshot` and
   `toMatchInlineSnapshot` in `test/**`.
@@ -837,10 +913,10 @@ arrives in the editor. Behaviour tests are untouched.
 `component-boundary.test.ts` are gone, `npm run lint` fails on a
 deliberately introduced boundary violation and a hand-rolled `<button>`,
 every behaviour test still passes, and the PR body lists each of the eight
-criteria with the rule, flag or file that now proves it, for T-21 to mark.
+criteria with the rule, flag or file that now proves it, for T-22 to mark.
 
-### T-19 · Dead code and single sources of truth
-refactor · 90m · **wave 6, solo** — after T-18
+### T-20 · Dead code and single sources of truth
+refactor · 90m · **wave 7, serial** — after T-19
 
 Nothing the user can see changes. Every commit cites the criteria whose
 tests prove that (`[AC-STATE-1, AC-API-8]` and so on).
@@ -870,8 +946,8 @@ tests prove that (`[AC-STATE-1, AC-API-8]` and so on).
 every test passes, coverage on `lib/**` is at or above the T-11 floor, and
 the PR body lists every deleted symbol and file.
 
-### T-20 · Comment diet and React out of `lib/`
-refactor · 75m · **wave 6, solo** — after T-19
+### T-21 · Comment diet and React out of `lib/`
+refactor · 75m · **wave 7, serial** — after T-20
 
 1. Move `lib/auth/{guards,provider,session-bar}.tsx` to `components/auth/`
    and `lib/tasks/provider.tsx` to `components/tasks/provider.tsx`; `lib/`
@@ -891,25 +967,79 @@ app components lib types` returns nothing, every test passes, and the
 comment share of `app components lib types` is under 15% of non-blank lines
 (it was 29%).
 
-### T-21 · QA re-verification after the optimisation
-verification only · 45m · **wave 7, solo** — fresh session, no shared context
+### T-22 · QA re-verification after the optimisation
+verification only · 45m · **wave 7, serial** — after T-21; fresh session, no shared context
 
-Independent re-walk on the T-13 pattern against `main` after T-20. Every
+Independent re-walk on the T-13 pattern against `main` after T-21. Every
 criterion whose named test moved, was consolidated or became a `⚙` is
 re-marked: `☑` with the new file and test name, `⚙` with the rule, flag,
 runner option or CI step named beside it, `◉` unchanged for the seven.
 Findings go to [`BLOCKERS.md`](BLOCKERS.md). Records the `Commit` column on
-`B-25` and `B-26`. Committed as `docs: T-21 ACCEPTANCE.md status marks`.
+`B-26` and `B-27`. Committed as `docs: T-22 ACCEPTANCE.md status marks`.
 
 ### T-15 · Freeze and dry run
-45m · **wave 8, solo** — after T-21 *and* T-14 (*ARCH-06:* was wave 6; the
-freeze stays the last thing that happens)
+45m · **wave 6, solo** — after T-13 *and* T-14
 
 Nothing merges after this task begins. Full dry run against the live URL, timed.
 Record a local fallback path in case the deployment fails during the
 presentation.
 
----
+*ARCH-06:* "nothing merges" includes T-18 fix sessions (and, *ARCH-07*, T-19..T-22). A bug found before
+the freeze is fixed and merged before T-15 opens, which is why wave 7 does
+not gate on T-15; a bug found after it waits until the presentation is over.
+
+### T-18 · Maintenance
+standing · no fixed duration (`0m` in the tables) · **wave 7, serial** — after T-13 *and* T-14 are closed · *added by ARCH-06*
+
+The build's last owned lane closed with T-12, and the first post-QA bug
+(`B-25`, an iOS WebKit date field the phone walk found) had nowhere to land:
+`app/globals.css` is T-01's, `components/tasks/task-form.tsx` is
+T-04/T-09/T-10's, all closed, and `task-close` check 6 rightly refused a
+T-12 session that wrote them. Resolving that with another per-commit
+ownership exception (the `B-20`/`B-22` pattern) would repeat for every bug.
+This task is the lane instead.
+
+**A fix session**, one per bug or cleanup:
+
+1. Start a fresh session from `main` with the maintenance prompt in
+   [`OPERATOR.md`](OPERATOR.md#the-two-other-roles). Claim with
+   `scripts/task.sh T-18 <criteria>`, where the criteria are the ones the
+   bug violates (or, for a cleanup, the ones whose tests cover the code
+   touched — rule 1 above). Not `/task-start`: its wave gate holds any
+   wave-7 task until every wave-6 task is closed, and T-15 is still planned;
+   `scripts/task.sh` claims without the gate, and the gate is protecting
+   nothing here because the phase is serial. After T-15 closes, `/task-start
+   T-18` works too and prints the open blockers.
+2. Fix it, with a test that names the criterion where a Jest test can. The
+   commit's criterion IDs are the criteria the bug violates:
+   `fix(tasks): T-18 iOS date field placeholder and sizing [AC-UI-1, AC-UI-2]`.
+3. `/task-close` runs unchanged. Check 6 passes on the word `everything` in
+   the ownership row; the `components/ui/**` carve-out is a rule the session
+   keeps, not one the script enforces. Check 4 still requires an `[AC-…]` on
+   every commit touching application code.
+4. The ledger row's `notes` name the bug — a `B-` row, or a one-line
+   description when there is none — so the row is attributable to a fix and
+   not only to a task. `criteria_ids` carries the violated criteria.
+5. PR title `fix(<scope>): T-18 <summary> [<criteria>]`, squash-merged as
+   before. Repo Guard's ledger-row job needs a `T-18` row in the diff; that
+   is what step 3 writes.
+
+**One session per task still holds.** T-18 is the task and every fix is its
+own session, so each fix is one ledger row: the ledger gains a per-fix
+maintenance cost, and the deck can cite it. Two fixes in one session is a
+compound row, and `CLAUDE.md` rule 2 says to label it rather than split it.
+
+**What stays frozen:** `components/ui/**`, for the reason it was frozen at
+T-01 — the primitives are shadcn's and a maintenance fix that edits one is
+a design change, not a fix. A fix that needs a primitive changed writes a
+blocker. `package.json` is no longer T-01's alone — a maintenance dependency
+is allowed — but rule 4 holds: an ADR first, and check 5 enforces it.
+
+**`◉` marks and `ACCEPTANCE.md`:** a fix session is a Builder session and
+writes no status mark. If a fix changes which test proves a criterion, it
+says so in its ledger notes and the Architect or a QA session re-marks.
+
+**Done when:** never, by design. The phase closes when the repository does.
 
 ## If time runs short
 

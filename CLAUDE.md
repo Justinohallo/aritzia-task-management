@@ -89,6 +89,12 @@ branch.
 Exempt: `chore:` commits for tooling, config, and the ledger; `docs:` commits
 for the spec files themselves.
 
+A cleanup that satisfies no criterion — a `refactor:` commit — references the
+criteria whose tests cover the code it touches, not a criterion it meets:
+`refactor(tasks): T-18 extract the date parser [AC-ADD-3, AC-ADD-4]` names
+the tests that prove the change preserved behaviour. The PR title carries
+`T-18` and the same IDs as before (`TASKS.md` rule 1, `CONTRIBUTING.md`).
+
 ### 4. An ADR before any new dependency
 
 Before adding a runtime dependency, write the ADR — or extend an existing one.
@@ -122,7 +128,7 @@ Eight criteria describe the toolchain, not the application, and
 `⚙` — enforced by tooling — with the lint rule, compiler flag, runner option
 or CI step named beside them. A Jest test that reads a config file to assert
 what the tool already enforces is not a test of anything; write the rule, not
-the test. *(ARCH-06)*
+the test. *(ARCH-07)*
 
 ### 6. The spec is the source of truth, and it is allowed to be wrong
 
