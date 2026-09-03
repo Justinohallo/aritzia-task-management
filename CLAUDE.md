@@ -123,6 +123,13 @@ them. Those, and only those, are marked `◉` — verified manually — with the
 procedure and the date written beside them. `◉` on any other criterion is a
 rule-5 violation dressed up.
 
+Eight criteria describe the toolchain, not the application, and
+`ACCEPTANCE.md`'s legend names them too. Those, and only those, are marked
+`⚙` — enforced by tooling — with the lint rule, compiler flag, runner option
+or CI step named beside them. A Jest test that reads a config file to assert
+what the tool already enforces is not a test of anything; write the rule, not
+the test. *(ARCH-07)*
+
 ### 6. The spec is the source of truth, and it is allowed to be wrong
 
 When the build reveals the spec is wrong, that is a finding, not an

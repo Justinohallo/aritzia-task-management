@@ -13,7 +13,7 @@ scratch. One set of slides, two renderings, both served by the app:
 
 Q-2 in `PROJECT.md` defaulted to keeping the slides out of the repository.
 The operator reversed that on 2026-09-02: the deck is presented from the
-live URL, so it ships with the app (`B-26` asks the Architect to restate
+live URL, so it ships with the app (`B-28` asks the Architect to restate
 Q-2 and give the route a criterion).
 
 ## Presenting from `/presentation`

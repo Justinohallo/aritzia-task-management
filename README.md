@@ -19,6 +19,7 @@ point.
 | [`docs/TASKS.md`](docs/TASKS.md) | the build plan, as six waves of concurrent agents |
 | [`docs/LEDGER.md`](docs/LEDGER.md) | every session's token usage and API-equivalent cost |
 | [`CLAUDE.md`](CLAUDE.md) | the operating rules for agent sessions |
+| [`docs/deep-dive/`](docs/deep-dive/README.md) | the Technical Deep Dive: how each subsystem works, the concept behind it, and where to look |
 
 ## Repository setup
 
