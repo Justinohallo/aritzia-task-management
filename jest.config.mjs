@@ -10,9 +10,6 @@ const createJestConfig = nextJest({ dir: "./" });
  * `transpilePackages` entry in next.config.ts, which would leak a test-only
  * concern into the production build.
  */
-/** True when jest was given a path pattern, e.g. `npm test -- test/tasks`. */
-const FILTERED_RUN = process.argv.slice(2).some((arg) => !arg.startsWith("-"));
-
 const ESM_ONLY = ["rettime", "until-async", "@open-draft"];
 
 /** @type {import('jest').Config} */
@@ -26,11 +23,11 @@ const config = {
   // `npm test` stays fast locally. See jest.bundle.config.mjs.
   testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/.next/", "<rootDir>/test/bundle/"],
   collectCoverageFrom: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
-  // `AC-TEST-4` (T-11): the floor on the state, API-client and validation
-  // modules is enforced by the runner, not reported. A full run collects
-  // coverage and fails below the floor; a run narrowed to a path pattern
-  // does not, because the coverage of a subset says nothing about the whole.
-  collectCoverage: !FILTERED_RUN,
+  // `AC-TEST-4`, `⚙` since T-19 (ARCH-07): the floor on the state,
+  // API-client and validation modules is enforced by the runner, not
+  // reported, on the `test:ci` script CI runs (`--coverage`). `npm test`
+  // stays fast locally and collects nothing.
+  collectCoverage: false,
   coverageThreshold: {
     "./lib/tasks/": { statements: 80 },
     "./lib/api/": { statements: 80 },
