@@ -1,5 +1,5 @@
 /**
- * Retry schedule for the API client (ADR-0004, T-07).
+ * Retry policy and schedule for the API client (ADR-0004, T-07).
  *
  * Pure functions over {@link RetryConfig}: no timers, no `fetch`, no
  * `Math.random()`. The one random input — the full-jitter draw — comes from
@@ -12,7 +12,30 @@
  * spreads a wall of synchronised `429`s across the window — the eCommerce
  * point ADR-0004 makes about product drops.
  */
-import { DEFAULT_RETRY_CONFIG, type RetryConfig } from "@/lib/api/config";
+
+export interface RetryConfig {
+  /** Total attempts including the first. `AC-API-7`: bounded. */
+  maxAttempts: number;
+  /** Backoff base; attempt `n` waits up to `baseDelayMs * 2^(n-1)`, capped. */
+  baseDelayMs: number;
+  maxDelayMs: number;
+  /** Per-request timeout enforced with `AbortController`. */
+  timeoutMs: number;
+  /**
+   * Source of the full-jitter draw in `[0, 1)`. Production uses
+   * `Math.random`; tests inject a fixed sequence so the schedule is
+   * reproducible (`AC-API-10`).
+   */
+  random: () => number;
+}
+
+export const DEFAULT_RETRY_CONFIG: RetryConfig = {
+  maxAttempts: 4,
+  baseDelayMs: 500,
+  maxDelayMs: 8_000,
+  timeoutMs: 10_000,
+  random: Math.random,
+};
 
 /** A retry attempt number, `1` being the first *retry* (the second request). */
 export type RetryAttempt = number;

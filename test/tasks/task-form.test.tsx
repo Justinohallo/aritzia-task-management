@@ -3,8 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 
 import { TaskForm } from "@/components/tasks/task-form";
-import { useTasks } from "@/lib/tasks/hooks";
-import { TasksProvider } from "@/lib/tasks/provider";
+import { TasksProvider, useTasks } from "@/lib/tasks/provider";
 import { STORAGE_KEY, TASK_TITLE_MAX_LENGTH } from "@/lib/tasks/schema";
 import { isOverdue } from "@/lib/tasks/validation";
 

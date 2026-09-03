@@ -19,8 +19,7 @@
  * non-determinism is injected through {@link ApiClientOptions}: the `fetch`,
  * the `sleep`, and the jitter draw inside `retry.random` (`AC-API-10`).
  */
-import { DEFAULT_RETRY_CONFIG, type RetryConfig } from "@/lib/api/config";
-import { canRetry, parseRetryAfter, retryDelayMs } from "@/lib/api/retry";
+import { canRetry, parseRetryAfter, retryDelayMs, DEFAULT_RETRY_CONFIG, type RetryConfig } from "@/lib/api/retry";
 import {
   RETRY_AFTER_HEADER,
   TASKS_ENDPOINT,

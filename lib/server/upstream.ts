@@ -32,8 +32,8 @@
  */
 import { timingSafeEqual } from "node:crypto";
 
-import { DEFAULT_SIMULATION_CONFIG, type RateLimitConfig, type SimulationConfig } from "@/lib/api/config";
 import { readApiKey } from "@/lib/server/env";
+import { DEFAULT_SIMULATION_CONFIG, type RateLimitConfig, type SimulationConfig } from "@/lib/server/simulation";
 import type {
   ApiErrorBody,
   CreateTaskRequest,

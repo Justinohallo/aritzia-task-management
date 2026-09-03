@@ -7,6 +7,7 @@ import TasksPage from "@/app/(protected)/tasks/page";
 import LoginPage from "@/app/login/page";
 import { neighbourOf } from "@/components/tasks/task-list";
 import { createApiClient, type ApiClient } from "@/lib/api/client";
+import { AuthProvider } from "@/lib/auth/provider";
 import { AUTH_STORAGE_VERSION, writeSession } from "@/lib/auth/session";
 import { ApiClientContext } from "@/lib/tasks/mutations";
 import { STORAGE_KEY, STORAGE_VERSION } from "@/lib/tasks/schema";
@@ -88,11 +89,22 @@ function testClient(): ApiClient {
 function renderTasksPage() {
   signIn();
   return render(
-    <ApiClientContext.Provider value={testClient()}>
-      <ProtectedLayout>
-        <TasksPage />
-      </ProtectedLayout>
-    </ApiClientContext.Provider>,
+    <AuthProvider>
+      <ApiClientContext.Provider value={testClient()}>
+        <ProtectedLayout>
+          <TasksPage />
+        </ProtectedLayout>
+      </ApiClientContext.Provider>
+    </AuthProvider>,
+  );
+}
+
+/** The login page as the user gets it: `<AuthProvider>` mounted in the root layout. */
+function renderLoginPage() {
+  return render(
+    <AuthProvider>
+      <LoginPage />
+    </AuthProvider>,
   );
 }
 
@@ -140,7 +152,7 @@ beforeEach(() => {
 
 describe("AC-A11Y-1 — every control is labelled", () => {
   it("AC-A11Y-1: on the login page every input and button has an accessible name and none relies on a placeholder", () => {
-    const { container } = render(<LoginPage />);
+    const { container } = renderLoginPage();
     const found = controls(container);
     expect(found.length).toBeGreaterThanOrEqual(3);
     for (const el of found) {
@@ -190,7 +202,7 @@ describe("AC-A11Y-2 — errors are programmatically associated", () => {
 
   it("AC-A11Y-2: a failing login field is aria-invalid and described by the alert", async () => {
     const user = userEvent.setup();
-    render(<LoginPage />);
+    renderLoginPage();
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
     const username = screen.getByLabelText("Username");
@@ -281,7 +293,7 @@ describe("AC-A11Y-3 — asynchronous outcomes are announced", () => {
 describe("AC-A11Y-4 — full keyboard operability", () => {
   it("AC-A11Y-4: the login form is completed and submitted by keyboard alone", async () => {
     const user = userEvent.setup();
-    render(<LoginPage />);
+    renderLoginPage();
 
     // The username field takes focus on load; Tab walks the rest in order.
     await waitFor(() => expect(screen.getByLabelText("Username")).toHaveFocus());
@@ -460,7 +472,7 @@ describe("AC-A11Y-5 — no colour-only meaning", () => {
 describe("AC-A11Y-6 — automated accessibility checks pass", () => {
   it("AC-A11Y-6: the login page has no violations, empty and after a failed submission", async () => {
     const user = userEvent.setup();
-    const { container } = render(<LoginPage />);
+    const { container } = renderLoginPage();
     expect(await axe(container)).toHaveNoViolations();
     await user.click(screen.getByRole("button", { name: "Log in" }));
     expect(await axe(container)).toHaveNoViolations();

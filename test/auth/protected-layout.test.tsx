@@ -9,8 +9,9 @@ import ProtectedLayout from "@/app/(protected)/layout";
 import TasksPage from "@/app/(protected)/tasks/page";
 import LoginPage from "@/app/login/page";
 import { announce } from "@/components/ui/live-region";
+import { AuthProvider } from "@/lib/auth/provider";
 import { AUTH_STORAGE_KEY, AUTH_STORAGE_VERSION, writeSession } from "@/lib/auth/session";
-import { useTasks } from "@/lib/tasks/hooks";
+import { useTasks } from "@/lib/tasks/provider";
 
 const mockRouter = { replace: jest.fn(), push: jest.fn(), prefetch: jest.fn(), back: jest.fn() };
 jest.mock("next/navigation", () => ({
@@ -31,7 +32,19 @@ function signIn(username = "ada") {
 }
 
 function renderProtected(children: React.ReactNode = <Page />) {
-  return render(<ProtectedLayout>{children}</ProtectedLayout>);
+  return render(
+    <AuthProvider>
+      <ProtectedLayout>{children}</ProtectedLayout>
+    </AuthProvider>,
+  );
+}
+
+function renderLoginPage() {
+  return render(
+    <AuthProvider>
+      <LoginPage />
+    </AuthProvider>,
+  );
 }
 
 beforeEach(() => {
@@ -53,9 +66,11 @@ describe("app/(protected)/layout.tsx", () => {
 
   it("AC-AUTH-7: the server render of a protected route contains no page content", () => {
     const html = renderToString(
-      <ProtectedLayout>
-        <Page />
-      </ProtectedLayout>,
+      <AuthProvider>
+        <ProtectedLayout>
+          <Page />
+        </ProtectedLayout>
+      </AuthProvider>,
     );
     expect(html).not.toContain(PAGE_TEXT);
     expect(html).not.toContain("Log out");
@@ -79,7 +94,7 @@ describe("app/(protected)/layout.tsx", () => {
 
   it("AC-AUTH-5: a session started in tab A does not exist in a new tab, which is redirected to /login", async () => {
     // Tab A: log in through the real form.
-    const tabA = render(<LoginPage />);
+    const tabA = renderLoginPage();
     const user = userEvent.setup();
     await user.type(screen.getByLabelText("Username"), "ada");
     await user.type(screen.getByLabelText("Password"), "correct horse battery");

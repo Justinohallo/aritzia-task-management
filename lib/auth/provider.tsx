@@ -14,12 +14,8 @@
  * status is `unknown`, and the guards in `lib/auth/guards.tsx` render
  * nothing for it — which is what `AC-AUTH-7` requires of a protected route.
  *
- * Because the record lives in `sessionStorage` rather than in React, the
- * provider need not sit at the root of the tree. Each route segment T-02
- * owns mounts its own: `app/login`, `app/(protected)`, and `app/page.tsx`.
- * A navigation between them remounts the provider, which re-reads the same
- * `sessionStorage`, so the segments cannot disagree. The root layout stays
- * untouched (it is not in T-02's lane).
+ * Mounted once, in `app/layout.tsx` (T-20): every route reads the same
+ * instance, so navigating between them cannot disagree about auth state.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
 

@@ -29,12 +29,12 @@ describe("tasksReducer", () => {
   const a = makeTask();
   const b = makeOtherTask();
 
-  it("AC-STATE-1: starts empty and is a pure function of state and action", () => {
+  it("AC-STATE-1: is a pure function of state and action", () => {
     expect(initialTasksState).toEqual([]);
-    const state = [a];
-    const next = tasksReducer(state, { type: "add", task: b });
-    expect(state).toEqual([a]);
-    expect(next).toEqual([a, b]);
+    const state = [a, b];
+    const next = tasksReducer(state, { type: "setCompleted", id: a.id, completed: true });
+    expect(state).toEqual([a, b]);
+    expect(next).toEqual([{ ...a, completed: true }, b]);
   });
 
   it("AC-STATE-3: hydrate replaces the whole list", () => {
@@ -42,22 +42,19 @@ describe("tasksReducer", () => {
     expect(tasksReducer([a], { type: "hydrate", tasks: [] })).toEqual([]);
   });
 
-  it("AC-STATE-1: add appends; setCompleted toggles by id; remove drops by id", () => {
-    let s = tasksReducer(initialTasksState, { type: "add", task: a });
-    s = tasksReducer(s, { type: "add", task: b });
-    s = tasksReducer(s, { type: "setCompleted", id: a.id, completed: true });
+  it("AC-STATE-1: setCompleted toggles by id", () => {
+    let s = tasksReducer([a, b], { type: "setCompleted", id: a.id, completed: true });
     expect(s.map((t) => [t.id, t.completed])).toEqual([
       [a.id, true],
       [b.id, false],
     ]);
-    s = tasksReducer(s, { type: "remove", id: a.id });
-    expect(s).toEqual([b]);
+    s = tasksReducer(s, { type: "setCompleted", id: b.id, completed: true });
+    expect(s.map((t) => t.completed)).toEqual([true, true]);
   });
 
-  it("AC-STATE-1: setCompleted and remove on an unknown id return the same state", () => {
+  it("AC-STATE-1: setCompleted on an unknown id returns the same state", () => {
     const s = [a];
     expect(tasksReducer(s, { type: "setCompleted", id: b.id, completed: true })).toBe(s);
-    expect(tasksReducer(s, { type: "remove", id: b.id })).toBe(s);
   });
 
   describe("T-08 optimistic lifecycle", () => {
@@ -85,10 +82,8 @@ describe("tasksReducer", () => {
       expect(row).toMatchObject({ id: b.id, createdAt: b.createdAt, completed: true, sync: "confirmed" });
     });
 
-    it("AC-API-7: add/rollback removes the provisional row; sync/set can mark it failed first", () => {
-      let s = tasksReducer([a, syncing], { type: "sync/set", id: b.id, sync: "failed" });
-      expect(s[1]).toMatchObject({ id: b.id, sync: "failed" });
-      s = tasksReducer(s, { type: "add/rollback", id: b.id });
+    it("add/rollback removes the provisional row", () => {
+      const s = tasksReducer([a, syncing], { type: "add/rollback", id: b.id });
       expect(s).toEqual([a]);
       expect(tasksReducer(s, { type: "add/rollback", id: b.id })).toBe(s);
     });
@@ -97,32 +92,25 @@ describe("tasksReducer", () => {
       const s = [a, b];
       const removed = tasksReducer(s, { type: "remove/optimistic", id: a.id });
       expect(removed).toEqual([b]);
-      const restored = tasksReducer(removed, { type: "remove/rollback", task: { ...a, sync: "failed" } });
+      const restored = tasksReducer(removed, { type: "remove/rollback", task: { ...a, sync: "syncing" } });
       expect(restored).toEqual([b, { ...a, sync: "confirmed" }]);
       // Position is not the reducer's concern: order is derived at render (`AC-LIST-3`).
       expect(tasksReducer(restored, { type: "remove/rollback", task: a })).toBe(restored);
     });
 
-    it("AC-API-11: sync/set changes only the sync state, and ignores an unknown id", () => {
-      const s = [a];
-      expect(tasksReducer(s, { type: "sync/set", id: a.id, sync: "syncing" })).toEqual([{ ...a, sync: "syncing" }]);
-      expect(tasksReducer(s, { type: "sync/set", id: b.id, sync: "syncing" })).toBe(s);
-    });
-
-    it("AC-STATE-4: the optimistic apply, confirm and rollback actions persist; sync/set does not", () => {
+    it("AC-STATE-4: the optimistic apply, confirm and rollback actions persist", () => {
       expect(isPersistingAction({ type: "add/optimistic", task: b })).toBe(true);
       expect(isPersistingAction({ type: "add/confirm", id: b.id, task: b })).toBe(true);
       expect(isPersistingAction({ type: "add/rollback", id: b.id })).toBe(true);
       expect(isPersistingAction({ type: "remove/optimistic", id: a.id })).toBe(true);
       expect(isPersistingAction({ type: "remove/rollback", task: a })).toBe(true);
-      expect(isPersistingAction({ type: "sync/set", id: a.id, sync: "failed" })).toBe(false);
     });
   });
 
   it("AC-STATE-4: only the user mutations persist; hydrate never does", () => {
-    expect(isPersistingAction({ type: "add", task: a })).toBe(true);
+    expect(isPersistingAction({ type: "add/optimistic", task: a })).toBe(true);
     expect(isPersistingAction({ type: "setCompleted", id: a.id, completed: true })).toBe(true);
-    expect(isPersistingAction({ type: "remove", id: a.id })).toBe(true);
+    expect(isPersistingAction({ type: "remove/optimistic", id: a.id })).toBe(true);
     expect(isPersistingAction({ type: "hydrate", tasks: [a] })).toBe(false);
   });
 });

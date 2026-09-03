@@ -71,14 +71,13 @@ describe("createTask — apply → call → reconcile / rollback", () => {
     ]);
   });
 
-  it("AC-API-7: when the retry budget is exhausted the row is marked failed, rolled back, and rate limiting is named", async () => {
+  it("when the retry budget is exhausted the row is rolled back and rate limiting is named", async () => {
     const h = harness({ createTask: () => Promise.reject(new RateLimitedError(3, 4)) });
 
     const result = await createTask(h.deps, task);
 
-    expect(h.types()).toEqual(["add/optimistic", "sync/set", "add/rollback"]);
-    expect(h.actions[1]).toEqual({ type: "sync/set", id: task.id, sync: "failed" });
-    expect(h.actions[2]).toEqual({ type: "add/rollback", id: task.id });
+    expect(h.types()).toEqual(["add/optimistic", "add/rollback"]);
+    expect(h.actions[1]).toEqual({ type: "add/rollback", id: task.id });
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("unreachable");
     expect(result.failure.kind).toBe("rate_limited");
@@ -91,7 +90,7 @@ describe("createTask — apply → call → reconcile / rollback", () => {
 
     const result = await createTask(h.deps, task);
 
-    expect(h.types()).toEqual(["add/optimistic", "sync/set", "add/rollback"]);
+    expect(h.types()).toEqual(["add/optimistic", "add/rollback"]);
     if (result.ok) throw new Error("unreachable");
     expect(result.failure.kind).toBe("generic");
     expect(result.failure.message).not.toMatch(/rate limit/i);
@@ -139,7 +138,7 @@ describe("deleteTask — apply → call → rollback", () => {
     expect(h.announced.at(-1)).toEqual({ message: '"Order the lookbook" deleted.', assertive: false });
   });
 
-  it("AC-API-7: an exhausted retry budget on delete restores the row and names rate limiting", async () => {
+  it("an exhausted retry budget on delete restores the row and names rate limiting", async () => {
     const h = harness({ deleteTask: () => Promise.reject(new RateLimitedError(undefined, 4)) });
     const result = await deleteTask(h.deps, task);
     expect(h.types()).toEqual(["remove/optimistic", "remove/rollback"]);

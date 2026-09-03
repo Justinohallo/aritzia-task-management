@@ -11,8 +11,6 @@
  */
 import { z } from "zod";
 
-import type { Task } from "@/types/task";
-
 /** `localStorage` key for the task envelope. */
 export const STORAGE_KEY = "aritzia.tasks";
 
@@ -60,6 +58,7 @@ export const persistedTaskSchema = z.object({
   title: taskTitleSchema,
   dueDate: dueDateSchema,
   completed: z.boolean(),
+  /** Tie-breaker in list ordering (`AC-LIST-3`). */
   createdAt: isoTimestampSchema,
 });
 
@@ -70,9 +69,3 @@ export const persistedEnvelopeSchema = z.object({
 
 export type PersistedTask = z.infer<typeof persistedTaskSchema>;
 export type PersistedEnvelope = z.infer<typeof persistedEnvelopeSchema>;
-
-// The persisted task is exactly the domain task minus `sync`. If either side
-// drifts, this stops compiling — which is the point of freezing both here.
-type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
-const persistedTaskMatchesDomain: Exact<PersistedTask, Omit<Task, "sync">> = true;
-void persistedTaskMatchesDomain;

@@ -20,8 +20,7 @@ import type { Task } from "@/types/task";
  * one live region mounted together, the network intercepted by MSW so the
  * real `fetch` path runs (ADR-0006). The client under test has an instant
  * `sleep` and a fixed jitter draw, so a scripted run of `429`s exhausts the
- * retry budget in milliseconds and the outcome is the same every run
- * (`AC-API-10`).
+ * retry budget in milliseconds and the outcome is the same every run.
  */
 const mockRouter = { replace: jest.fn(), push: jest.fn(), prefetch: jest.fn(), back: jest.fn() };
 jest.mock("next/navigation", () => ({

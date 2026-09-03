@@ -44,8 +44,8 @@ import { TaskFilters, FILTER_LABELS, matchesFilter, useTaskFilter } from "@/comp
 import { TaskItem } from "@/components/tasks/task-item";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAnnounce } from "@/components/ui/live-region";
-import { useTaskDispatch, useTasks, useTasksHydrated } from "@/lib/tasks/hooks";
 import { useTaskMutations } from "@/lib/tasks/mutations";
+import { useTaskDispatch, useTasks, useTasksHydrated } from "@/lib/tasks/provider";
 import type { Filter, Task } from "@/types/task";
 
 /** `AC-LIST-3`: due date ascending, ties broken by creation time ascending. Stable; does not mutate. */

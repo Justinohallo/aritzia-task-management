@@ -6,7 +6,16 @@ import path from "node:path";
 
 import LoginPage from "@/app/login/page";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/credentials";
+import { AuthProvider } from "@/lib/auth/provider";
 import { AUTH_STORAGE_KEY, AUTH_STORAGE_VERSION, writeSession } from "@/lib/auth/session";
+
+function renderLoginPage() {
+  return render(
+    <AuthProvider>
+      <LoginPage />
+    </AuthProvider>,
+  );
+}
 
 const mockRouter = { replace: jest.fn(), push: jest.fn(), prefetch: jest.fn(), back: jest.fn() };
 jest.mock("next/navigation", () => ({ useRouter: () => mockRouter }));
@@ -30,13 +39,13 @@ async function submit(username: string, password: string) {
 describe("/login", () => {
   it("AC-NAV-1: the login page lives at its own route and serves the login form", () => {
     expect(existsSync(path.join(process.cwd(), "app", "login", "page.tsx"))).toBe(true);
-    render(<LoginPage />);
+    renderLoginPage();
     expect(screen.getByRole("heading", { level: 1, name: "Log in" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Log in" })).toBeInTheDocument();
   });
 
   it("AC-AUTH-1: renders a labelled username field, a labelled password field of type password, and a submit button", () => {
-    render(<LoginPage />);
+    renderLoginPage();
     const username = screen.getByLabelText("Username");
     const password = screen.getByLabelText("Password");
     expect(username).toHaveAttribute("type", "text");
@@ -46,12 +55,12 @@ describe("/login", () => {
   });
 
   it("AC-AUTH-1: the credential rule is stated on the page", () => {
-    render(<LoginPage />);
+    renderLoginPage();
     expect(screen.getByText(new RegExp(`at least ${MIN_PASSWORD_LENGTH} characters`))).toBeInTheDocument();
   });
 
   it("AC-AUTH-2: valid credentials write an auth record to sessionStorage and redirect to /tasks", async () => {
-    render(<LoginPage />);
+    renderLoginPage();
     await submit("ada", VALID_PASSWORD);
 
     const raw = window.sessionStorage.getItem(AUTH_STORAGE_KEY);
@@ -61,7 +70,7 @@ describe("/login", () => {
   });
 
   it("AC-AUTH-3: an empty username shows an alert, writes nothing, and stays on /login", async () => {
-    render(<LoginPage />);
+    renderLoginPage();
     await submit("", VALID_PASSWORD);
 
     const alert = screen.getByRole("alert");
@@ -75,7 +84,7 @@ describe("/login", () => {
   });
 
   it("AC-AUTH-3: a short password shows an alert naming the minimum, writes nothing, and stays on /login", async () => {
-    render(<LoginPage />);
+    renderLoginPage();
     await submit("ada", "x".repeat(MIN_PASSWORD_LENGTH - 1));
 
     const alert = screen.getByRole("alert");
@@ -86,7 +95,7 @@ describe("/login", () => {
   });
 
   it("AC-AUTH-3: the alert clears once a later submission succeeds", async () => {
-    render(<LoginPage />);
+    renderLoginPage();
     await submit("ada", "short");
     expect(screen.getByRole("alert")).toBeInTheDocument();
     const user = userEvent.setup();
@@ -98,14 +107,14 @@ describe("/login", () => {
 
   it("AC-AUTH-8: an already-authenticated visitor is redirected to /tasks and sees no form", async () => {
     writeSession({ version: AUTH_STORAGE_VERSION, username: "ada", authenticatedAt: "2026-09-02T09:00:00.000Z" });
-    render(<LoginPage />);
+    renderLoginPage();
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/tasks"));
     expect(screen.queryByRole("button", { name: "Log in" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
   });
 
   it("AC-AUTH-9: after a successful login no entry in sessionStorage or localStorage contains the password in any form", async () => {
-    render(<LoginPage />);
+    renderLoginPage();
     await submit("ada", VALID_PASSWORD);
 
     const entries: string[] = [];
@@ -127,14 +136,14 @@ describe("/login", () => {
   });
 
   it("ADR-0005: the page states that this is not a production login", () => {
-    render(<LoginPage />);
+    renderLoginPage();
     const notice = screen.getByRole("note");
     expect(notice).toHaveTextContent(/not a production login/i);
     expect(notice).toHaveTextContent(/sessionStorage/);
   });
 
   it("has no automated accessibility violations, before and after a failed submission", async () => {
-    const { container } = render(<LoginPage />);
+    const { container } = renderLoginPage();
     expect(await axe(container)).toHaveNoViolations();
     await submit("", "");
     expect(await axe(container)).toHaveNoViolations();

@@ -30,7 +30,7 @@ const record: AuthRecord = {
 };
 
 describe("sessionStorage adapter", () => {
-  it("AC-AUTH-2: writes the auth record under the auth key and reads it back", () => {
+  it("writes the auth record under the auth key and reads it back", () => {
     const storage = memoryStorage();
     expect(writeSession(record, storage)).toBe(true);
     expect(JSON.parse(storage.getItem(AUTH_STORAGE_KEY) as string)).toEqual(record);
@@ -57,13 +57,13 @@ describe("sessionStorage adapter", () => {
     ["an unknown version", JSON.stringify({ ...record, version: 999 })],
     ["an empty username", JSON.stringify({ ...record, username: "" })],
     ["a non-ISO timestamp", JSON.stringify({ ...record, authenticatedAt: "yesterday" })],
-  ])("AC-AUTH-7: %s in storage reads as no session, without throwing", (_label, raw) => {
+  ])("%s in storage reads as no session, without throwing", (_label, raw) => {
     expect(() => parseAuthRecord(raw)).not.toThrow();
     expect(parseAuthRecord(raw)).toBeNull();
     expect(readSession(memoryStorage({ [AUTH_STORAGE_KEY]: raw }))).toBeNull();
   });
 
-  it("AC-AUTH-2: a storage that refuses the write is reported, not thrown", () => {
+  it("a storage that refuses the write is reported, not thrown", () => {
     const storage = memoryStorage();
     storage.setItem = () => {
       throw new DOMException("QuotaExceededError");

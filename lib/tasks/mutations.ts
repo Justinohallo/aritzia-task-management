@@ -11,7 +11,7 @@
  * `client` (ADR-0004, T-07) and the one `announce` (`components/ui/live-region.tsx`).
  *
  *   createTask:  add/optimistic ─▶ POST ─┬─ 201 ─▶ add/confirm      (`AC-API-8`)
- *                                        └─ fail ─▶ sync/set failed, add/rollback
+ *                                        └─ fail ─▶ add/rollback     (`AC-API-7`)
  *   deleteTask:  remove/optimistic ─▶ DELETE ─┬─ 200 ─▶ (nothing to reconcile)
  *                                             └─ fail ─▶ remove/rollback (`AC-API-9`)
  *
@@ -32,8 +32,7 @@ import { createContext, useContext, useMemo } from "react";
 
 import { useAnnounce, type Announce } from "@/components/ui/live-region";
 import { RateLimitedError, apiClient, type ApiClient } from "@/lib/api/client";
-import { useTaskDispatch } from "@/lib/tasks/hooks";
-import type { TaskDispatch } from "@/lib/tasks/provider";
+import { useTaskDispatch, type TaskDispatch } from "@/lib/tasks/provider";
 import type { CreateTaskRequest } from "@/types/api";
 import type { Task } from "@/types/task";
 
@@ -115,7 +114,6 @@ export async function createTask({ dispatch, client, announce }: MutationDeps, t
     return { ok: true };
   } catch (error) {
     const failure = describeFailure("add", task, error);
-    dispatch({ type: "sync/set", id: task.id, sync: "failed" });
     dispatch({ type: "add/rollback", id: task.id });
     announce(failure.message, { assertive: true });
     return { ok: false, failure };
