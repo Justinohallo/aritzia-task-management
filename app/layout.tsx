@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { AuthProvider } from "@/lib/auth/provider";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -7,6 +9,7 @@ export const metadata: Metadata = {
   description: "A task-management application built spec-first for a technical case assessment.",
 };
 
+/** `<AuthProvider>` mounts once here (T-20): every route reads the same session state. */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -14,7 +17,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-dvh font-sans antialiased">{children}</body>
+      <body className="min-h-dvh font-sans antialiased">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

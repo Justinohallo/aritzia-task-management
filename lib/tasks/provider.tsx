@@ -5,7 +5,7 @@
  *
  * One `useReducer` behind two contexts, state and dispatch, so a component
  * that only dispatches does not re-render on every change. The contexts are
- * not exported: components go through the hooks in `lib/tasks/hooks.ts`.
+ * not exported: components go through the typed hooks below.
  *
  * Hydration happens in an effect, after mount. The first render — on the
  * server and on the client — sees the same empty list, so the markup
@@ -13,7 +13,7 @@
  * `hydrated` tells consumers whether the list is real yet, so they can show
  * a skeleton instead of a misleading empty state.
  */
-import { createContext, useCallback, useEffect, useReducer, useRef, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useReducer, useRef, type ReactNode } from "react";
 
 import type { TaskAction } from "@/lib/tasks/actions";
 import { initialTasksState, isPersistingAction, tasksReducer, type TasksState } from "@/lib/tasks/reducer";
@@ -73,4 +73,33 @@ export function TasksProvider({ children, storage }: TasksProviderProps) {
       <TasksDispatchContext.Provider value={dispatch}>{children}</TasksDispatchContext.Provider>
     </TasksStateContext.Provider>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Typed access — the only sanctioned way to read or change tasks. Each hook
+// throws a pointed error outside `<TasksProvider>`, which is where a missing
+// provider should surface: at the first render, with the fix in the message.
+// ---------------------------------------------------------------------------
+
+function missing(hook: string): never {
+  throw new Error(`${hook} must be used within <TasksProvider>. Mount it in a layout above this component.`);
+}
+
+function useTasksContext(hook: string): TasksContextValue {
+  return useContext(TasksStateContext) ?? missing(hook);
+}
+
+/** The task list. Empty until hydrated; see {@link useTasksHydrated}. */
+export function useTasks(): TasksState {
+  return useTasksContext("useTasks").tasks;
+}
+
+/** Whether the post-mount read of `localStorage` has been applied. */
+export function useTasksHydrated(): boolean {
+  return useTasksContext("useTasksHydrated").hydrated;
+}
+
+/** Stable across renders; safe in effect dependency lists. */
+export function useTaskDispatch(): TaskDispatch {
+  return useContext(TasksDispatchContext) ?? missing("useTaskDispatch");
 }

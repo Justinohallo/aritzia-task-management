@@ -32,8 +32,7 @@ import { createContext, useContext, useMemo } from "react";
 
 import { useAnnounce, type Announce } from "@/components/ui/live-region";
 import { RateLimitedError, apiClient, type ApiClient } from "@/lib/api/client";
-import { useTaskDispatch } from "@/lib/tasks/hooks";
-import type { TaskDispatch } from "@/lib/tasks/provider";
+import { useTaskDispatch, type TaskDispatch } from "@/lib/tasks/provider";
 import type { CreateTaskRequest } from "@/types/api";
 import type { Task } from "@/types/task";
 
